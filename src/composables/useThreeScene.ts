@@ -72,9 +72,10 @@ export function useThreeScene(options: ThreeSceneOptions): {
   let animationId: number
   
   const scene = new THREE.Scene()
-  scene.background = new THREE.Color(0xf8fafc) // Light background like roadmap.sh
+  scene.background = new THREE.Color(0xf8fafc)
 
   const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100)
+  camera.position.set(2, 0, 16)
   
   let renderer: THREE.WebGLRenderer
 
@@ -92,16 +93,22 @@ export function useThreeScene(options: ThreeSceneOptions): {
   const exHeight = 1.2
   const exDepth = 0.3
 
-  // Materials
-  const mainColor = '#ffe500' // Bright yellow
-  const exColor = '#fde047'   // Sand/light yellow
+  const mainColor = '#ffe500' 
+  const exColor = '#fde047'   
   const completedColor = '#22c55e'
   const textColor = '#000000'
   const lineColor = 0x3b82f6
 
-  // Build the scene
+  let targetCameraY = 0
+  let hoveredObj: THREE.Object3D | null = null
+
+  function clampCamera() {
+    const minY = -(nodes.value.length - 1) * 8 - 4
+    const maxY = 4
+    targetCameraY = Math.max(minY, Math.min(maxY, targetCameraY))
+  }
+
   function buildScene() {
-    // Clear previous
     while(scene.children.length > 0){ 
       scene.remove(scene.children[0]) 
     }
@@ -120,7 +127,6 @@ export function useThreeScene(options: ThreeSceneOptions): {
       const node = nodesData[i]
       const baseY = -i * 8
 
-      // Main Node
       const bgColor = node.completed ? completedColor : mainColor
       const tex = createTextTexture(node.title, bgColor, textColor, 512, 128)
       const mat = new THREE.MeshBasicMaterial({ map: tex })
@@ -134,7 +140,6 @@ export function useThreeScene(options: ThreeSceneOptions): {
       scene.add(mesh)
       nodeMeshes.push({ mesh, index: i, baseY })
 
-      // Vertical Line
       if (i > 0) {
         const lineMat = new THREE.LineBasicMaterial({ color: lineColor, linewidth: 2 })
         const points = [
@@ -146,7 +151,6 @@ export function useThreeScene(options: ThreeSceneOptions): {
         scene.add(line)
       }
 
-      // Exercises
       for (let j = 0; j < node.exercises.length; j++) {
         const ex = node.exercises[j]
         const exBaseY = baseY + (j - (node.exercises.length - 1) / 2) * 1.8
@@ -156,7 +160,6 @@ export function useThreeScene(options: ThreeSceneOptions): {
         const eMat = new THREE.MeshBasicMaterial({ map: eTex })
         const eMesh = new THREE.Mesh(exBoxGeom, eMat)
         
-        // Right side
         eMesh.position.set(6.5, exBaseY, 0)
         
         const eEdges = new THREE.LineSegments(exEdgeGeom, edgeMaterial)
@@ -166,7 +169,6 @@ export function useThreeScene(options: ThreeSceneOptions): {
         scene.add(eMesh)
         exerciseMeshes.push({ mesh: eMesh, index: i, exIndex: j, baseY: exBaseY })
 
-        // Dashed connection
         const dashedMat = new THREE.LineDashedMaterial({
           color: lineColor,
           linewidth: 1,
@@ -175,7 +177,6 @@ export function useThreeScene(options: ThreeSceneOptions): {
           gapSize: 0.2,
         })
         
-        // Path: from main node right edge, curved/angled to exercise left edge
         const p1 = new THREE.Vector3(nodeWidth/2, baseY, 0)
         const p2 = new THREE.Vector3(nodeWidth/2 + 1.5, baseY, 0)
         const p3 = new THREE.Vector3(6.5 - exWidth/2 - 1.5, exBaseY, 0)
@@ -200,55 +201,89 @@ export function useThreeScene(options: ThreeSceneOptions): {
     renderer.setSize(width, height)
   }
 
-  function onClick(event: MouseEvent) {
+  // Interaction State
+  let isDragging = false
+  let startMouseY = 0
+  let previousMouseY = 0
+  let hasDragged = false
+
+  function onPointerDown(e: PointerEvent) {
+    isDragging = true
+    hasDragged = false
+    startMouseY = e.clientY
+    previousMouseY = e.clientY
+    
+    if (canvas.value) {
+      canvas.value.setPointerCapture(e.pointerId)
+    }
+  }
+
+  function onPointerMove(e: PointerEvent) {
     if (!canvas.value) return
+
+    if (isDragging) {
+      const deltaY = e.clientY - previousMouseY
+      targetCameraY += deltaY * 0.05
+      clampCamera()
+      previousMouseY = e.clientY
+      
+      if (Math.abs(e.clientY - startMouseY) > 5) {
+        hasDragged = true
+      }
+    }
+
     const rect = canvas.value.getBoundingClientRect()
-    mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1
-    mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1
+    mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1
+    mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1
 
     raycaster.setFromCamera(mouse, camera)
-    
-    // Check all clickable meshes
     const interactables = [...nodeMeshes.map(n => n.mesh), ...exerciseMeshes.map(e => e.mesh)]
     const intersects = raycaster.intersectObjects(interactables)
 
     if (intersects.length > 0) {
-      const obj = intersects[0].object
-      if (obj.userData.index !== undefined) {
-        onNodeClick(obj.userData.index)
-      }
+      hoveredObj = intersects[0].object
+      document.body.style.cursor = 'pointer'
+    } else {
+      hoveredObj = null
+      document.body.style.cursor = 'default'
     }
+  }
+
+  function onPointerUp(e: PointerEvent) {
+    isDragging = false
+    if (canvas.value) {
+      canvas.value.releasePointerCapture(e.pointerId)
+    }
+
+    if (!hasDragged && hoveredObj && hoveredObj.userData.index !== undefined) {
+      onNodeClick(hoveredObj.userData.index)
+    }
+  }
+
+  function onWheel(e: WheelEvent) {
+    targetCameraY -= e.deltaY * 0.05
+    clampCamera()
   }
 
   function animate() {
     animationId = requestAnimationFrame(animate)
-    const time = performance.now() * 0.001
 
-    // Animate meshes hovering
+    camera.position.y += (targetCameraY - camera.position.y) * 0.1
+    camera.lookAt(2, camera.position.y, 0)
+
     for (const item of nodeMeshes) {
-      item.mesh.position.y = item.baseY + Math.sin(time * 2 + item.index) * 0.1
-      item.mesh.rotation.y = Math.sin(time * 1 + item.index) * 0.05
+      const isHovered = (hoveredObj === item.mesh)
+      const targetScale = isHovered ? 1.05 : 1.0
+      item.mesh.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.15)
       
-      // Active highlight scale
-      if (item.index === activeIndex.value) {
-        item.mesh.scale.setScalar(1 + Math.sin(time * 4) * 0.03)
-      } else {
-        item.mesh.scale.setScalar(1)
-      }
+      const targetRotX = isHovered ? -0.1 : 0
+      item.mesh.rotation.x += (targetRotX - item.mesh.rotation.x) * 0.1
     }
 
     for (const item of exerciseMeshes) {
-      item.mesh.position.y = item.baseY + Math.sin(time * 2.5 + item.exIndex) * 0.08
-    }
-
-    // Camera follow
-    if (nodes.value.length > 0) {
-      const targetY = -activeIndex.value * 8
-      camera.position.y += (targetY - camera.position.y) * 0.05
-      // Look slightly to the right to frame the side nodes
-      camera.position.x = 2
-      camera.position.z = 16
-      camera.lookAt(2, camera.position.y, 0)
+      const isHovered = (hoveredObj === item.mesh)
+      const targetScale = isHovered ? 1.05 : 1.0
+      item.mesh.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.15)
     }
 
     if (renderer) {
@@ -259,21 +294,36 @@ export function useThreeScene(options: ThreeSceneOptions): {
   function init(el: HTMLCanvasElement) {
     renderer = new THREE.WebGLRenderer({ canvas: el, antialias: true })
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-    
-    // White background doesn't need tone mapping like a dark scene
     renderer.toneMapping = THREE.NoToneMapping
     
     buildScene()
     handleResize()
+    
+    // Set initial camera target based on active index
+    targetCameraY = -activeIndex.value * 8
+    camera.position.y = targetCameraY
+    
     animate()
 
-    window.addEventListener('click', onClick)
+    el.addEventListener('pointerdown', onPointerDown)
+    el.addEventListener('pointermove', onPointerMove)
+    el.addEventListener('pointerup', onPointerUp)
+    el.addEventListener('pointercancel', onPointerUp)
+    el.addEventListener('wheel', onWheel, { passive: true })
   }
 
   function dispose() {
     cancelAnimationFrame(animationId)
     window.removeEventListener('resize', handleResize)
-    window.removeEventListener('click', onClick)
+    
+    if (canvas.value) {
+      canvas.value.removeEventListener('pointerdown', onPointerDown)
+      canvas.value.removeEventListener('pointermove', onPointerMove)
+      canvas.value.removeEventListener('pointerup', onPointerUp)
+      canvas.value.removeEventListener('pointercancel', onPointerUp)
+      canvas.value.removeEventListener('wheel', onWheel)
+    }
+
     if (renderer) renderer.dispose()
     
     scene.traverse((object) => {
@@ -296,10 +346,15 @@ export function useThreeScene(options: ThreeSceneOptions): {
     }
   }, { immediate: true })
 
-  // Rebuild scene if nodes deeply change (like completion status)
   watch(() => nodes.value, () => {
     buildScene()
   }, { deep: true })
+
+  // When active index changes externally (player controls), move camera
+  watch(activeIndex, (newVal) => {
+    targetCameraY = -newVal * 8
+    clampCamera()
+  })
 
   onUnmounted(dispose)
 

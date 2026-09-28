@@ -37,6 +37,6 @@ useThreeScene({
   width: 100vw;
   height: 100vh;
   z-index: 0;
-  cursor: pointer;
+  touch-action: none; /* Previne scroll padrão no mobile quando dragar */
 }
 </style>
