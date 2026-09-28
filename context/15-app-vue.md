@@ -141,7 +141,7 @@ body {
   overflow-x: hidden;
 }
 
-/* PrimeVue Unstyled — Estilos base dos componentes */
+/* Componentes Nativos — Estilos base dos componentes */
 
 .p-dialog-mask {
   background: rgba(0, 0, 0, 0.6);

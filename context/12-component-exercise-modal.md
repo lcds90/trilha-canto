@@ -1,6 +1,6 @@
 # Contexto 12 — Componente: ExerciseModal (Modal de Exercícios)
 
-> Crie o arquivo `src/components/ExerciseModal.vue` usando PrimeVue Dialog (unstyled).
+> Crie o arquivo `src/components/ExerciseModal.vue` usando HTML Nativo Dialog (unstyled).
 
 ## Arquivo: `src/components/ExerciseModal.vue`
 
@@ -8,9 +8,9 @@
 - `src/stores/routine.ts` (contexto 06)
 - `src/stores/aiUsage.ts` (contexto 09)
 - `src/lib/ai.ts` (contexto 05)
-- PrimeVue configurado como unstyled no main.ts (contexto 16)
+- HTML Nativo configurado como unstyled no main.ts (contexto 16)
 
-## PrimeVue Components Usados
+## HTML Nativo Components Usados
 
 ```typescript
 import Dialog from 'primevue/dialog'
@@ -167,9 +167,9 @@ Dialog (v-model:visible="visible", modal, :header="node.title", @hide="onHide")
                 → "{{ s }}"
 ```
 
-## CSS do Modal (PrimeVue Unstyled)
+## CSS do Modal (Componentes Nativos)
 
-Como PrimeVue está em modo `unstyled`, estilize usando as classes padrão do PrimeVue:
+Como HTML Nativo está em modo `unstyled`, estilize usando as classes padrão do HTML Nativo:
 
 ```css
 /* Overlay/Mask */

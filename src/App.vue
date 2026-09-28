@@ -98,6 +98,7 @@ function nodeProgressPercent(nodeIndex: number): number {
 </template>
 
 <style>
+/* Global Reset and Typography */
 * {
   margin: 0;
   padding: 0;
@@ -105,123 +106,11 @@ function nodeProgressPercent(nodeIndex: number): number {
 }
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
   background-color: #080816;
   color: #e2e8f0;
   overflow-x: hidden;
-}
-
-/* PrimeVue Unstyled — Estilos base dos componentes */
-
-.p-dialog-mask {
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(4px);
-}
-
-.p-dialog {
-  background: rgba(20, 20, 45, 0.95);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 229, 0, 0.2);
-  border-radius: 20px;
-  color: #e2e8f0;
-  width: 90vw;
-  max-width: 560px;
-  max-height: 85vh;
-  overflow-y: auto;
-}
-
-.p-dialog-header {
-  padding: 20px 24px 12px;
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #ffe500;
-  border-bottom: 1px solid rgba(255, 229, 0, 0.1);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.p-dialog-content {
-  padding: 16px 24px 24px;
-}
-
-.p-dialog-header-actions {
-  display: flex;
-}
-
-.p-button {
-  background: rgba(255, 229, 0, 0.15);
-  border: 1px solid rgba(255, 229, 0, 0.3);
-  color: #ffe500;
-  padding: 10px 20px;
-  border-radius: 10px;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 0.85rem;
-  transition: all 0.2s;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-}
-
-.p-button:hover:not(:disabled) {
-  background: rgba(255, 229, 0, 0.25);
-  border-color: rgba(255, 229, 0, 0.5);
-}
-
-.p-button:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
-}
-
-.p-inputtext {
-  background: rgba(20, 20, 40, 0.8);
-  border: 1px solid rgba(255, 229, 0, 0.15);
-  color: #e2e8f0;
-  padding: 10px 14px;
-  border-radius: 8px;
-  width: 100%;
-  outline: none;
-  font-size: 0.9rem;
-  transition: border-color 0.2s;
-}
-
-.p-inputtext:focus {
-  border-color: #ffe500;
-}
-
-.p-inputtext::placeholder {
-  color: #475569;
-}
-
-.p-checkbox {
-  width: 22px;
-  height: 22px;
-  cursor: pointer;
-}
-
-.p-checkbox-box {
-  width: 22px;
-  height: 22px;
-  border: 2px solid rgba(255, 229, 0, 0.3);
-  border-radius: 6px;
-  background: transparent;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-}
-
-.p-checkbox-box.p-highlight,
-.p-checkbox.p-checked .p-checkbox-box {
-  background: #22c55e;
-  border-color: #22c55e;
-}
-
-.p-checkbox-icon {
-  color: white;
-  font-size: 12px;
+  -webkit-font-smoothing: antialiased;
 }
 </style>
 
@@ -236,6 +125,12 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  pointer-events: none; /* Allows clicking through empty spaces to 3D scene if interactive */
+}
+
+/* Make children interactive again */
+.header, .main, .player-bar, .modal-overlay {
+  pointer-events: auto;
 }
 
 /* === Header === */
@@ -244,18 +139,19 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: 20px 32px;
-  background: rgba(8, 8, 22, 0.8);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(255, 229, 0, 0.1);
+  background: #11111a;
+  border-bottom: 2px solid #333;
   position: sticky;
   top: 0;
   z-index: 10;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
 
 .app-title {
   font-size: 1.4rem;
-  font-weight: 700;
-  color: #e2e8f0;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.5px;
 }
 
 /* === Main: Node Cards === */
@@ -263,113 +159,134 @@ body {
   flex: 1;
   display: flex;
   justify-content: center;
-  padding: 40px 20px 120px;  /* bottom padding para o player bar */
+  padding: 60px 20px 140px;  /* bottom padding para o player bar */
 }
 
 .nodes-track {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  max-width: 480px;
+  gap: 24px;
+  max-width: 500px;
   width: 100%;
 }
 
-/* Node Card */
+/* Node Card (roadmap.sh style) */
 .node-card {
-  background: rgba(30, 30, 60, 0.7);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 229, 0, 0.12);
-  border-radius: 16px;
-  padding: 18px 22px;
+  background: #1a1a24;
+  border: 2px solid #333;
+  border-radius: 12px;
+  padding: 20px 24px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease-in-out;
+  position: relative;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
 }
 
 .node-card:hover {
-  border-color: rgba(255, 229, 0, 0.35);
+  border-color: #555;
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
 }
 
 .node-card.active {
   border-color: #ffe500;
-  background: rgba(255, 229, 0, 0.06);
-  box-shadow: 0 0 30px rgba(255, 229, 0, 0.12);
+  background: #1e1e24;
+  box-shadow: 0 0 0 2px rgba(255, 229, 0, 0.2), 0 8px 20px rgba(0, 0, 0, 0.4);
+}
+
+.node-card.active::before {
+  content: '';
+  position: absolute;
+  left: -2px;
+  top: -2px;
+  bottom: -2px;
+  width: 6px;
+  background: #ffe500;
+  border-radius: 10px 0 0 10px;
 }
 
 .node-card.completed {
-  border-color: rgba(34, 197, 94, 0.35);
-  background: rgba(34, 197, 94, 0.04);
+  border-color: #16a34a;
+  background: #121c17;
+  opacity: 0.9;
 }
 
 .node-header {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 8px;
+  gap: 12px;
+  margin-bottom: 12px;
 }
 
 .node-index {
-  font-size: 0.7rem;
-  font-weight: 700;
-  color: #ffe500;
-  background: rgba(255, 229, 0, 0.15);
-  padding: 2px 8px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #000;
+  background: #ffe500;
+  padding: 4px 10px;
   border-radius: 6px;
 }
 
+.node-card.completed .node-index {
+  background: #16a34a;
+  color: #fff;
+}
+
 .node-time {
-  font-size: 0.7rem;
-  color: #94a3b8;
+  font-size: 0.75rem;
+  color: #a0aec0;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.05em;
+  font-weight: 600;
 }
 
 .node-check {
   margin-left: auto;
   color: #22c55e;
-  font-weight: 700;
-  font-size: 1.1rem;
+  font-weight: 800;
+  font-size: 1.2rem;
 }
 
 .node-title {
-  font-size: 1.05rem;
-  font-weight: 600;
-  color: #e2e8f0;
-  margin-bottom: 10px;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 12px;
+  letter-spacing: -0.3px;
 }
 
 .node-card.completed .node-title {
   text-decoration: line-through;
-  opacity: 0.6;
+  color: #a0aec0;
 }
 
 /* Mini Progress Bar */
 .node-progress {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 .mini-progress-bar {
   flex: 1;
-  height: 4px;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 2px;
+  height: 6px;
+  background: #2a2a35;
+  border: 1px solid #333;
+  border-radius: 4px;
   overflow: hidden;
 }
 
 .mini-progress-fill {
   height: 100%;
   background: linear-gradient(90deg, #ffe500, #22c55e);
-  border-radius: 2px;
   transition: width 0.4s ease;
 }
 
 .mini-progress-text {
-  font-size: 0.7rem;
-  color: #64748b;
-  min-width: 28px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #a0aec0;
+  min-width: 32px;
   text-align: right;
 }
 
@@ -387,11 +304,11 @@ body {
   }
 
   .main {
-    padding: 24px 16px 100px;
+    padding: 30px 16px 160px;
   }
 
   .node-card {
-    padding: 14px 16px;
+    padding: 16px 20px;
   }
 }
 </style>

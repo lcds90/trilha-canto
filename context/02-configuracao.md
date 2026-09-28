@@ -78,7 +78,7 @@ Alterar:
   "dependencies": {
     "firebase": "^12.19.0",
     "pinia": "^4.0.3",
-    "primevue": "^5.0.1",
+    
     "three": "^0.186.1",
     "vue": "^3.5.42",
     "vue-router": "^5.3.1"

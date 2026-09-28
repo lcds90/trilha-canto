@@ -169,6 +169,6 @@ font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, san
 
 - Todos os botões interativos devem ter `title` ou `aria-label`
 - Links externos: `target="_blank" rel="noopener noreferrer"`
-- Checkbox: usa PrimeVue Checkbox (acessível por padrão)
+- Checkbox: usa HTML Nativo Checkbox (acessível por padrão)
 - Cores de contraste: texto principal (#e2e8f0) em fundo escuro (#080816) = ratio ~13:1 ✓
 - Emoji como decoração, não como conteúdo único (sempre acompanhado de texto)

@@ -10,7 +10,7 @@ App de rotina interativa para guiar a prática diária de canto. O usuário nave
 - **Linguagem:** TypeScript (~6.0)
 - **Build:** Vite (^8.2)
 - **3D:** Three.js raw (^0.186) — cena de background com nós animados
-- **UI Components:** PrimeVue 5 Unstyled — Dialog, Button, Checkbox, InputText
+- **UI Components:** Native HTML/CSS (Sem HTML Nativo)
 - **Estado:** Pinia (^4.0) — stores: routine, player, streak, aiUsage
 - **Backend:** Firebase (plano Spark) — apenas AI Logic
 - **IA:** Firebase AI Logic + Gemini 2.5 Flash — análise de seções
@@ -38,7 +38,7 @@ App de rotina interativa para guiar a prática diária de canto. O usuário nave
 - Câmera segue o nó ativo com lerp suave
 - Nó ativo: brilho pulsante amarelo. Nó completado: verde. Inativo: opaco
 
-### Modal de Exercícios (PrimeVue Dialog)
+### Modal de Exercícios (HTML Nativo Dialog)
 - Lista de exercícios com Checkbox de conclusão
 - Adicionar exercício: nome + link de vídeo + duração (min:seg)
 - Remover exercício (botão ×)
@@ -74,7 +74,7 @@ App de rotina interativa para guiar a prática diária de canto. O usuário nave
 - Amarelo (#ffe500) para nós ativos e acentos
 - Verde (#22c55e) para completados e streak
 - Roxo (#8b5cf6) para IA
-- PrimeVue totalmente unstyled — CSS customizado
+- Native HTML/CSS customizado
 - Responsivo (mobile-first)
 
 ## Estrutura de Arquivos

@@ -13,7 +13,7 @@ App de rotina de prática de canto com roadmap visual 3D animado (Three.js). O u
 | Linguagem | TypeScript | ~6.0 |
 | Build | Vite | ^8.2 |
 | 3D | Three.js (raw, sem wrapper) | ^0.186 |
-| UI | PrimeVue 5 **Unstyled** | ^5.0 |
+| UI | Native HTML/CSS | ^5.0 |
 | Estado | Pinia (Composition API) | ^4.0 |
 | Backend | Firebase (plano Spark) | ^12.19 |
 | IA | Firebase AI Logic + Gemini 2.5 Flash | via firebase SDK |

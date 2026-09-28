@@ -1,11 +1,11 @@
 # Contexto 16 — main.ts (Entry Point)
 
-> Atualize `src/main.ts` para configurar PrimeVue Unstyled e ToastService.
+> Atualize `src/main.ts` para configurar Componentes Nativos e ToastService.
 
 ## Arquivo: `src/main.ts`
 
 ## Pré-requisitos
-- PrimeVue instalado (`primevue@^5.0`)
+- HTML Nativo instalado (`primevue@^5.0`)
 - Pinia instalado (`pinia@^4.0`)
 - Vue Router instalado (`vue-router@^5.3`)
 
@@ -14,7 +14,7 @@
 ```typescript
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
-import PrimeVue from 'primevue/config'
+import HTML Nativo from 'primevue/config'
 import ToastService from 'primevue/toastservice'
 
 import App from './App.vue'
@@ -24,7 +24,7 @@ const app = createApp(App)
 
 app.use(createPinia())
 app.use(router)
-app.use(PrimeVue, { unstyled: true })   // PrimeVue sem estilos built-in
+app.use(HTML Nativo, { unstyled: true })   // HTML Nativo sem estilos built-in
 app.use(ToastService)                     // Para notificações de rate limiting
 
 app.mount('#app')
@@ -34,12 +34,12 @@ app.mount('#app')
 
 | Antes | Depois |
 |-------|--------|
-| Sem PrimeVue | `app.use(PrimeVue, { unstyled: true })` |
+| Sem HTML Nativo | `app.use(HTML Nativo, { unstyled: true })` |
 | Sem ToastService | `app.use(ToastService)` |
 | 2 imports | 4 imports |
 
 ## Notas
-- `{ unstyled: true }` significa que PrimeVue NÃO injeta CSS. Todo styling é manual (ver contexto 15 para CSS)
+- `{ unstyled: true }` significa que HTML Nativo NÃO injeta CSS. Todo styling é manual (ver contexto 15 para CSS)
 - `ToastService` é necessário para `useToast()` funcionar nos componentes
 - O `router` pode ter rotas vazias por ora (`routes: []`) — a app é single-page sem navegação
 - O Pinia deve ser registrado ANTES dos stores serem usados nos componentes

@@ -1,6 +1,6 @@
 # Contexto 13 — Componente: PlayerControls (Player da Rotina)
 
-> Crie o arquivo `src/components/PlayerControls.vue` usando PrimeVue Button (unstyled).
+> Crie o arquivo `src/components/PlayerControls.vue` usando HTML Nativo Button (unstyled).
 
 ## Arquivo: `src/components/PlayerControls.vue`
 
@@ -9,7 +9,7 @@
 - `src/stores/routine.ts` (contexto 06)
 - `src/stores/streak.ts` (contexto 08)
 
-## PrimeVue Components Usados
+## HTML Nativo Components Usados
 
 ```typescript
 import Button from 'primevue/button'

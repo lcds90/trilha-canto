@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import Button from 'primevue/button'
 import { usePlayerStore } from '@/stores/player'
 import { useRoutineStore } from '@/stores/routine'
 import { useStreakStore } from '@/stores/streak'
@@ -51,14 +50,14 @@ function finishSession(): void {
     </div>
 
     <div class="player-controls">
-      <Button @click="playerStore.prev()" :disabled="playerStore.isFirstNode">⏮</Button>
-      <Button @click="playerStore.togglePlay()" class="play-btn">
+      <button class="icon-btn" @click="playerStore.prev()" :disabled="playerStore.isFirstNode">⏮</button>
+      <button class="icon-btn play-btn" @click="playerStore.togglePlay()">
         {{ playerStore.isPlaying ? '⏸' : '▶' }}
-      </Button>
-      <Button @click="playerStore.next()" :disabled="playerStore.isLastNode">⏭</Button>
+      </button>
+      <button class="icon-btn" @click="playerStore.next()" :disabled="playerStore.isLastNode">⏭</button>
       
       <label class="auto-toggle">
-        <input type="checkbox" v-model="playerStore.autoAdvance" />
+        <input type="checkbox" class="native-checkbox" v-model="playerStore.autoAdvance" />
         <span>Auto</span>
       </label>
     </div>
@@ -70,7 +69,7 @@ function finishSession(): void {
 
     <span v-if="totalDurationFormatted" class="duration-display">⏱️ {{ totalDurationFormatted }}</span>
 
-    <Button v-if="routineStore.isAllCompleted" class="finish-btn" @click="finishSession">✅ Concluir Sessão</Button>
+    <button v-if="routineStore.isAllCompleted" class="finish-btn" @click="finishSession">✅ Concluir Sessão</button>
   </div>
 </template>
 
@@ -81,14 +80,14 @@ function finishSession(): void {
   left: 0;
   right: 0;
   z-index: 20;
-  background: rgba(8, 8, 22, 0.9);
-  backdrop-filter: blur(16px);
-  border-top: 1px solid rgba(255, 229, 0, 0.15);
+  background: #11111a;
+  border-top: 2px solid #333;
   padding: 12px 24px;
   display: flex;
   align-items: center;
   gap: 20px;
   flex-wrap: wrap;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.4);
 }
 
 /* Barra de progresso */
@@ -100,22 +99,23 @@ function finishSession(): void {
 }
 
 .progress-bar-bg {
-  height: 6px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 3px;
+  height: 8px;
+  background: #2a2a35;
+  border: 1px solid #333;
+  border-radius: 4px;
   overflow: hidden;
 }
 
 .progress-bar-fill {
   height: 100%;
   background: linear-gradient(90deg, #ffe500, #22c55e);
-  border-radius: 3px;
   transition: width 0.5s ease;
 }
 
 .progress-text {
-  font-size: 0.7rem;
-  color: #94a3b8;
+  font-size: 0.75rem;
+  color: #a0aec0;
+  font-weight: 600;
 }
 
 /* Controles */
@@ -125,68 +125,120 @@ function finishSession(): void {
   gap: 8px;
 }
 
+.icon-btn {
+  background: #1a1a24;
+  border: 2px solid #333;
+  color: #fff;
+  border-radius: 8px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.icon-btn:hover:not(:disabled) {
+  background: #2a2a35;
+  border-color: #ffe500;
+}
+
+.icon-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .play-btn {
-  width: 44px;
-  height: 44px;
-  border-radius: 50% !important;
+  background: #ffe500;
+  color: #000;
+  border-color: #e5ce00;
+  width: 48px;
+  height: 48px;
   font-size: 1.2rem;
+  border-radius: 50%;
+}
+
+.play-btn:hover:not(:disabled) {
+  background: #ffec33;
+  border-color: #ffe500;
 }
 
 .auto-toggle {
   display: flex;
   align-items: center;
-  gap: 4px;
-  font-size: 0.75rem;
-  color: #94a3b8;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: #a0aec0;
+  font-weight: 600;
   cursor: pointer;
+  margin-left: 8px;
 }
 
-.auto-toggle input {
+.native-checkbox {
+  width: 16px;
+  height: 16px;
   accent-color: #ffe500;
+  cursor: pointer;
 }
 
 /* Info do nó ativo */
 .active-info {
   flex: 1;
   cursor: pointer;
-  padding: 4px 8px;
+  padding: 6px 12px;
   border-radius: 8px;
-  transition: background 0.2s;
+  background: #1a1a24;
+  border: 2px solid #2a2a35;
+  transition: all 0.2s;
 }
 
 .active-info:hover {
-  background: rgba(255, 229, 0, 0.1);
+  border-color: #ffe500;
+  background: #1a1a24;
 }
 
 .active-title {
   display: block;
-  font-size: 0.9rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 700;
   color: #ffe500;
 }
 
 .active-time {
-  font-size: 0.7rem;
-  color: #94a3b8;
+  font-size: 0.75rem;
+  color: #a0aec0;
 }
 
 /* Duração total */
 .duration-display {
-  font-size: 0.8rem;
-  color: #94a3b8;
+  font-size: 0.85rem;
+  color: #a0aec0;
+  font-weight: 600;
 }
 
 /* Botão concluir */
 .finish-btn {
-  background: rgba(34, 197, 94, 0.2) !important;
-  border-color: rgba(34, 197, 94, 0.4) !important;
-  color: #22c55e !important;
+  background: #22c55e;
+  color: #000;
+  border: 2px solid #16a34a;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.finish-btn:hover {
+  background: #4ade80;
 }
 
 /* Mobile */
 @media (max-width: 640px) {
   .player-bar {
-    padding: 10px 16px;
+    padding: 12px 16px;
     gap: 12px;
   }
 
