@@ -9,8 +9,8 @@ App de rotina interativa para guiar a prática diária de canto. O usuário nave
 - **Framework:** Vue 3 (Composition API, `<script setup>`)
 - **Linguagem:** TypeScript (~6.0)
 - **Build:** Vite (^8.2)
-- **3D:** Three.js raw (^0.186) — cena de background com nós animados
-- **UI Components:** Native HTML/CSS (Sem HTML Nativo)
+- **Animações e Câmera:** GSAP (^3.12) — cena 2D/3D simulada usando DOM nativo e SVG paths
+- **UI Components:** Native HTML/CSS
 - **Estado:** Pinia (^4.0) — stores: routine, player, streak, aiUsage
 - **Backend:** Firebase (plano Spark) — apenas AI Logic
 - **IA:** Firebase AI Logic + Gemini 2.5 Flash — análise de seções
@@ -31,25 +31,28 @@ App de rotina interativa para guiar a prática diária de canto. O usuário nave
 
 ## Funcionalidades Principais
 
-### Cena 3D (Three.js)
-- Nós flutuantes em zigzag com animação (flutuação, rotação suave)
-- Caminho luminoso (tube geometry) conectando os nós
-- Partículas de fundo (estrelas)
-- Câmera segue o nó ativo com lerp suave
-- Nó ativo: brilho pulsante amarelo. Nó completado: verde. Inativo: opaco
+### Cena Dinâmica (GSAP + SVG)
+- Nós flutuantes animados com curva Bezier fluida conectando o trajeto
+- Partículas (estrelas) de fundo com paralaxe
+- Câmera centraliza suavemente no exercício ativo via GSAP (eixo Y)
+- É possível arrastar para navegar pelo mapa livremente
+- Cores dinâmicas: Verde (concluído), Amarelo (em progresso), Opaco (inativo)
+- A cada seção, uma lista contextual (`.exercise-side-list`) é exibida com os exercícios pertencentes
 
-### Modal de Exercícios (HTML Nativo Dialog)
-- Lista de exercícios com Checkbox de conclusão
-- Adicionar exercício: nome + link de vídeo + duração (min:seg)
-- Remover exercício (botão ×)
-- Duração total calculada dos vídeos vinculados
-- Botão "Analisar com IA" → feedback do Gemini
+### Gestão de Exercícios (Modo de Edição)
+- Acionado via botão ⚙️ diretamente no diagrama
+- Transforma a Sidebar num contexto de edição, substituindo temporariamente o Player
+- Permite Adicionar, Editar (Nome + URL de YouTube) e Excluir exercícios daquela seção
+- Salvamento automático via Vue Reativity e `localStorage`
 
-### Player de Rotina
-- Botões: ⏮ Anterior | ▶/⏸ Play/Pause | ⏭ Próximo
-- Auto-advance: avança automaticamente 1.5s após completar seção (quando ativado)
-- Barra de progresso (seções completadas)
-- Botão "Concluir Sessão" quando tudo está completo
+### Sidebar Principal (Player & Status)
+- Disposição responsiva que pode ser redimensionada e trocada de lado (Esquerda/Direita)
+- **Cabeçalho Expansível:** Contém o título e oculta o painel de "Streak" (Ofensiva)
+- **Progresso:** Calcula o avanço geral baseado no total de *exercícios* concluídos, não só seções
+- **Controles:** ⏮, ▶/⏸, ⏭ (Com emissão animada de emojis ao clicar)
+- **Toggles Lado a Lado:** Checkboxes customizados com animações fluidas para "Avançar automaticamente" e "Marcar como Concluído"
+- Espaço dedicado (16:9) para exibir vídeos de YouTube incorporados
+- **Auto-advance:** Avança automaticamente 1.5s após marcar como concluído
 
 ### Streak (Ofensiva)
 - Dias consecutivos de prática (current + recorde)

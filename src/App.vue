@@ -1,47 +1,77 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted, provide } from 'vue'
 import RoadmapScene from '@/components/RoadmapScene.vue'
-import ExerciseModal from '@/components/ExerciseModal.vue'
 import PlayerControls from '@/components/PlayerControls.vue'
-import StreakPanel from '@/components/StreakPanel.vue'
-import { usePlayerStore } from '@/stores/player'
 
-const playerStore = usePlayerStore()
-const selectedNodeIndex = ref<number | null>(null)
+const sidebarWidth = ref(350)
+const sidebarPosition = ref<'left' | 'right'>('right')
+const isResizing = ref(false)
 
-function openNode(index: number): void {
-  playerStore.goTo(index)
-  selectedNodeIndex.value = index
+onMounted(() => {
+  const storedWidth = localStorage.getItem('trilha-canto-sidebar-width')
+  if (storedWidth) {
+    sidebarWidth.value = parseInt(storedWidth, 10)
+  }
+  const storedPos = localStorage.getItem('trilha-canto-sidebar-pos')
+  if (storedPos === 'left' || storedPos === 'right') {
+    sidebarPosition.value = storedPos
+  }
+})
+
+function togglePosition() {
+  sidebarPosition.value = sidebarPosition.value === 'right' ? 'left' : 'right'
+  localStorage.setItem('trilha-canto-sidebar-pos', sidebarPosition.value)
 }
 
-function closeModal(): void {
-  selectedNodeIndex.value = null
+// Provide this to PlayerControls to call it
+provide('toggleSidebarPosition', togglePosition)
+
+function startResize(e: MouseEvent) {
+  isResizing.value = true
+  document.addEventListener('mousemove', onResize)
+  document.addEventListener('mouseup', stopResize)
+  document.body.style.cursor = 'col-resize'
+  document.body.style.userSelect = 'none'
+}
+
+function onResize(e: MouseEvent) {
+  if (!isResizing.value) return
+  let newWidth = 0
+  if (sidebarPosition.value === 'right') {
+    newWidth = document.body.clientWidth - e.clientX
+  } else {
+    newWidth = e.clientX
+  }
+  
+  if (newWidth > 250 && newWidth < 800) {
+    sidebarWidth.value = newWidth
+  }
+}
+
+function stopResize() {
+  isResizing.value = false
+  document.removeEventListener('mousemove', onResize)
+  document.removeEventListener('mouseup', stopResize)
+  document.body.style.cursor = ''
+  document.body.style.userSelect = ''
+  localStorage.setItem('trilha-canto-sidebar-width', sidebarWidth.value.toString())
 }
 </script>
 
 <template>
-  <div class="app">
-    <!-- 3D Canvas handled completely by Three.js -->
-    <RoadmapScene @openNode="openNode" />
-
-    <!-- 2D Overlay -->
-    <div class="overlay">
-      <header class="header">
-        <h1 class="app-title">🎤 Trilha de Canto</h1>
-        <StreakPanel />
-      </header>
-      
-      <main class="main-empty"></main>
-
-      <PlayerControls @openNode="openNode" />
+  <div class="app-layout" :style="{ '--sidebar-width': sidebarWidth + 'px', flexDirection: sidebarPosition === 'right' ? 'row' : 'row-reverse' }">
+    <div class="main-content">
+      <RoadmapScene />
     </div>
 
-    <!-- Modals -->
-    <ExerciseModal
-      v-if="selectedNodeIndex !== null"
-      :nodeIndex="selectedNodeIndex"
-      @close="closeModal"
-    />
+    <!-- Drag Resizer -->
+    <div class="resizer" @mousedown="startResize">
+      <div class="resizer-handle"></div>
+    </div>
+
+    <aside class="sidebar">
+      <PlayerControls />
+    </aside>
   </div>
 </template>
 
@@ -62,54 +92,63 @@ body {
 </style>
 
 <style scoped>
-.app {
+.app-layout {
+  display: flex;
   width: 100vw;
   height: 100vh;
+  overflow: hidden;
 }
 
-.overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100vw;
+.main-content {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.resizer {
+  width: 8px;
+  background: #cbd5e1;
+  cursor: col-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+  border-left: 2px solid #000;
+  border-right: 2px solid #000;
+}
+
+.resizer:hover {
+  background: #ffe500;
+}
+
+.resizer-handle {
+  width: 2px;
+  height: 24px;
+  background: #000;
+}
+
+.sidebar {
+  width: var(--sidebar-width);
+  min-width: 250px;
+  max-width: 800px;
   height: 100vh;
+  background: #ffffff;
   display: flex;
   flex-direction: column;
-  pointer-events: none;
+  z-index: 20;
 }
 
-.header, :deep(.player-bar), :deep(.modal-overlay), :deep(.streak-panel) {
-  pointer-events: auto;
-}
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 24px;
-  background: #ffffff;
-  border-bottom: 2px solid #000;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-  z-index: 10;
-}
-
-.app-title {
-  font-size: 1.5rem;
-  font-weight: 800;
-  color: #000;
-  letter-spacing: -0.5px;
-}
-
-.main-empty {
-  flex: 1;
-}
-
-@media (max-width: 640px) {
-  .header {
-    padding: 12px 16px;
+@media (max-width: 768px) {
+  .app-layout {
+    flex-direction: column !important;
   }
-  .app-title {
-    font-size: 1.2rem;
+  .resizer {
+    display: none;
+  }
+  .sidebar {
+    width: 100% !important;
+    height: 50vh; /* Adjust as needed for mobile */
+    border-top: 2px solid #000;
   }
 }
 </style>

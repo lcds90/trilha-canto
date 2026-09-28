@@ -42,13 +42,13 @@ export const useStreakStore = defineStore('streak', () => {
     if (history.value.length === 0) return 0
     const sorted = [...history.value].sort((a, b) => b.date.localeCompare(a.date))
     const today = getTodayISO()
-    const diffToToday = getDaysDiff(sorted[0].date, today)
+    const diffToToday = getDaysDiff(sorted[0]!.date, today)
     
     if (diffToToday > 1) return 0
     
     let streak = 1
     for (let i = 0; i < sorted.length - 1; i++) {
-      if (getDaysDiff(sorted[i + 1].date, sorted[i].date) === 1) {
+      if (getDaysDiff(sorted[i + 1]!.date, sorted[i]!.date) === 1) {
         streak++
       } else {
         break
@@ -63,7 +63,7 @@ export const useStreakStore = defineStore('streak', () => {
     let max = 1
     let current = 1
     for (let i = 0; i < sorted.length - 1; i++) {
-      if (getDaysDiff(sorted[i].date, sorted[i + 1].date) === 1) {
+      if (getDaysDiff(sorted[i]!.date, sorted[i + 1]!.date) === 1) {
         current++
         if (current > max) max = current
       } else {
@@ -84,7 +84,7 @@ export const useStreakStore = defineStore('streak', () => {
     for (let i = 29; i >= 0; i--) {
       const d = new Date(today)
       d.setDate(today.getDate() - i)
-      const iso = d.toISOString().split('T')[0]
+      const iso = d.toISOString().split('T')[0]!
       const practiced = history.value.some(record => record.date === iso)
       days.push({ date: iso, practiced })
     }

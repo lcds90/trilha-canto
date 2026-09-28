@@ -134,6 +134,15 @@ export const useRoutineStore = defineStore('routine', () => {
     saveToStorage()
   }
 
+  function updateExercise(nodeId: string, exerciseId: string, updates: Partial<RoadmapNode['exercises'][0]>): void {
+    const node = nodes.value.find(n => n.id === nodeId)
+    if (!node) return
+    const exercise = node.exercises.find(e => e.id === exerciseId)
+    if (!exercise) return
+    Object.assign(exercise, updates)
+    saveToStorage()
+  }
+
   function resetDaily(): void {
     for (const node of nodes.value) {
       node.completed = false
@@ -150,7 +159,9 @@ export const useRoutineStore = defineStore('routine', () => {
     isAllCompleted,
     toggleExercise,
     addExercise,
+    updateExercise,
     removeExercise,
     resetDaily,
+    saveToStorage,
   }
 })

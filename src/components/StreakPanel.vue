@@ -23,8 +23,8 @@ const todayISO = computed(() => new Date().toISOString().split('T')[0])
     </div>
 
     <div class="calendar-grid">
-      <div 
-        v-for="day in streakStore.last30Days" 
+      <div
+        v-for="day in streakStore.last30Days"
         :key="day.date"
         class="calendar-day"
         :class="{
@@ -41,7 +41,7 @@ const todayISO = computed(() => new Date().toISOString().split('T')[0])
 .streak-panel {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: center;
   gap: 8px;
 }
 
@@ -124,10 +124,6 @@ const todayISO = computed(() => new Date().toISOString().split('T')[0])
 }
 
 @media (max-width: 768px) {
-  .streak-panel {
-    align-items: center;
-  }
-
   .calendar-grid {
     gap: 2px;
   }
