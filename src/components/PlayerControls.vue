@@ -80,14 +80,14 @@ function finishSession(): void {
   left: 0;
   right: 0;
   z-index: 20;
-  background: #11111a;
-  border-top: 2px solid #333;
+  background: #ffffff;
+  border-top: 2px solid #000;
   padding: 12px 24px;
   display: flex;
   align-items: center;
   gap: 20px;
   flex-wrap: wrap;
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
 }
 
 /* Barra de progresso */
@@ -100,8 +100,8 @@ function finishSession(): void {
 
 .progress-bar-bg {
   height: 8px;
-  background: #2a2a35;
-  border: 1px solid #333;
+  background: #f1f5f9;
+  border: 2px solid #000;
   border-radius: 4px;
   overflow: hidden;
 }
@@ -114,8 +114,8 @@ function finishSession(): void {
 
 .progress-text {
   font-size: 0.75rem;
-  color: #a0aec0;
-  font-weight: 600;
+  color: #334155;
+  font-weight: 700;
 }
 
 /* Controles */
@@ -126,9 +126,9 @@ function finishSession(): void {
 }
 
 .icon-btn {
-  background: #1a1a24;
-  border: 2px solid #333;
-  color: #fff;
+  background: #ffffff;
+  border: 2px solid #000;
+  color: #000;
   border-radius: 8px;
   width: 40px;
   height: 40px;
@@ -141,7 +141,7 @@ function finishSession(): void {
 }
 
 .icon-btn:hover:not(:disabled) {
-  background: #2a2a35;
+  background: #f8fafc;
   border-color: #ffe500;
 }
 
@@ -153,7 +153,7 @@ function finishSession(): void {
 .play-btn {
   background: #ffe500;
   color: #000;
-  border-color: #e5ce00;
+  border-color: #000;
   width: 48px;
   height: 48px;
   font-size: 1.2rem;
@@ -162,7 +162,6 @@ function finishSession(): void {
 
 .play-btn:hover:not(:disabled) {
   background: #ffec33;
-  border-color: #ffe500;
 }
 
 .auto-toggle {
@@ -170,8 +169,8 @@ function finishSession(): void {
   align-items: center;
   gap: 6px;
   font-size: 0.8rem;
-  color: #a0aec0;
-  font-weight: 600;
+  color: #000;
+  font-weight: 700;
   cursor: pointer;
   margin-left: 8px;
 }
@@ -189,43 +188,43 @@ function finishSession(): void {
   cursor: pointer;
   padding: 6px 12px;
   border-radius: 8px;
-  background: #1a1a24;
-  border: 2px solid #2a2a35;
+  background: #ffffff;
+  border: 2px solid #000;
   transition: all 0.2s;
 }
 
 .active-info:hover {
-  border-color: #ffe500;
-  background: #1a1a24;
+  background: #fffb00;
 }
 
 .active-title {
   display: block;
   font-size: 0.95rem;
-  font-weight: 700;
-  color: #ffe500;
+  font-weight: 800;
+  color: #000;
 }
 
 .active-time {
   font-size: 0.75rem;
-  color: #a0aec0;
+  color: #475569;
+  font-weight: 600;
 }
 
 /* Duração total */
 .duration-display {
   font-size: 0.85rem;
-  color: #a0aec0;
-  font-weight: 600;
+  color: #334155;
+  font-weight: 700;
 }
 
 /* Botão concluir */
 .finish-btn {
   background: #22c55e;
   color: #000;
-  border: 2px solid #16a34a;
+  border: 2px solid #000;
   padding: 10px 16px;
   border-radius: 8px;
-  font-weight: 700;
+  font-weight: 800;
   font-size: 0.9rem;
   cursor: pointer;
   transition: all 0.2s;

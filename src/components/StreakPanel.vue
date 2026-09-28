@@ -54,7 +54,6 @@ const todayISO = computed(() => new Date().toISOString().split('T')[0])
 
 .flame {
   font-size: 1.5rem;
-  /* Animação sutil de pulso */
   animation: flamePulse 1.5s ease-in-out infinite;
 }
 
@@ -71,17 +70,17 @@ const todayISO = computed(() => new Date().toISOString().split('T')[0])
 .streak-count {
   font-size: 1.8rem;
   font-weight: 800;
-  color: #ffe500;
+  color: #000;
   line-height: 1;
 }
 
 .streak-count.inactive {
-  color: #64748b;
+  color: #94a3b8;
 }
 
 .streak-label {
   font-size: 0.8rem;
-  color: #94a3b8;
+  color: #64748b;
   align-self: flex-end;
   margin-bottom: 2px;
 }
@@ -90,6 +89,7 @@ const todayISO = computed(() => new Date().toISOString().split('T')[0])
 .streak-stats {
   font-size: 0.7rem;
   color: #64748b;
+  font-weight: 600;
 }
 
 /* Calendário 30 dias */
@@ -103,16 +103,18 @@ const todayISO = computed(() => new Date().toISOString().split('T')[0])
   width: 14px;
   height: 14px;
   border-radius: 3px;
-  background: rgba(255, 255, 255, 0.06);    /* Dia não praticado */
+  background: #f1f5f9;    /* Dia não praticado */
+  border: 1px solid #cbd5e1;
   transition: background 0.2s;
 }
 
 .calendar-day.practiced {
   background: #22c55e;                       /* Dia praticado - verde */
+  border-color: #16a34a;
 }
 
 .calendar-day.today {
-  outline: 2px solid #ffe500;                /* Hoje - borda amarela */
+  outline: 2px solid #000;                /* Hoje - borda preta */
   outline-offset: 1px;
 }
 

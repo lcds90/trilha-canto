@@ -4,18 +4,24 @@ import { useThreeScene } from '@/composables/useThreeScene'
 import { usePlayerStore } from '@/stores/player'
 import { useRoutineStore } from '@/stores/routine'
 
+const emit = defineEmits<{
+  openNode: [index: number]
+}>()
+
 const canvasRef = ref<HTMLCanvasElement | null>(null)
 const playerStore = usePlayerStore()
 const routineStore = useRoutineStore()
 
 const activeIndex = computed(() => playerStore.activeNodeIndex)
-const completedNodes = computed(() => routineStore.nodes.map(n => n.completed))
+const nodes = computed(() => routineStore.nodes)
 
 useThreeScene({
   canvas: canvasRef,
   activeIndex,
-  completedNodes,
-  nodeCount: routineStore.nodes.length,
+  nodes,
+  onNodeClick: (index: number) => {
+    emit('openNode', index)
+  }
 })
 </script>
 
@@ -31,6 +37,6 @@ useThreeScene({
   width: 100vw;
   height: 100vh;
   z-index: 0;
-  pointer-events: none;
+  cursor: pointer;
 }
 </style>

@@ -182,8 +182,8 @@ function onHide(): void {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(5px);
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(2px);
   z-index: 1000;
   display: flex;
   align-items: center;
@@ -192,62 +192,66 @@ function onHide(): void {
 }
 
 .modal-container {
-  background: #11111a;
-  border: 2px solid #333;
-  border-radius: 12px;
+  background: #ffffff;
+  border: 4px solid #000;
+  border-radius: 16px;
   width: 100%;
   max-width: 500px;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.15);
 }
 
 .modal-header {
   padding: 16px 20px;
-  border-bottom: 2px solid #333;
+  border-bottom: 3px solid #000;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  background: #f8fafc;
+  border-radius: 12px 12px 0 0;
 }
 
 .modal-title {
   font-size: 1.25rem;
-  font-weight: 700;
-  color: #ffe500;
+  font-weight: 800;
+  color: #000;
   margin: 0;
 }
 
 .close-modal-btn {
   background: transparent;
   border: none;
-  color: #888;
-  font-size: 1.5rem;
+  color: #000;
+  font-size: 1.8rem;
+  font-weight: bold;
   cursor: pointer;
   line-height: 1;
 }
 
 .close-modal-btn:hover {
-  color: #fff;
+  color: #ef4444;
 }
 
 .modal-content {
-  padding: 20px;
+  padding: 24px;
   overflow-y: auto;
-  color: #e2e8f0;
+  color: #0f172a;
 }
 
 .modal-time {
   font-size: 0.9rem;
-  color: #a0aec0;
+  color: #475569;
+  font-weight: 600;
   margin-bottom: 4px;
 }
 
 .modal-progress {
   font-size: 0.85rem;
-  color: #22c55e;
-  font-weight: 600;
-  margin-bottom: 16px;
+  color: #16a34a;
+  font-weight: 800;
+  margin-bottom: 20px;
 }
 
 .exercise-list {
@@ -261,26 +265,29 @@ function onHide(): void {
   align-items: flex-start;
   gap: 12px;
   padding: 12px;
-  background: #1a1a24;
-  border: 2px solid #2a2a35;
+  background: #ffffff;
+  border: 2px solid #000;
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s;
+  box-shadow: 2px 2px 0 #000;
 }
 
 .exercise-item:hover {
-  border-color: #444;
+  transform: translate(-2px, -2px);
+  box-shadow: 4px 4px 0 #000;
 }
 
 .exercise-item.completed {
-  opacity: 0.6;
-  background: #15151d;
-  border-color: #22c55e40;
+  opacity: 0.8;
+  background: #f0fdf4;
+  border-color: #16a34a;
+  box-shadow: 2px 2px 0 #16a34a;
 }
 
 .exercise-item.completed .exercise-name {
   text-decoration: line-through;
-  color: #a0aec0;
+  color: #475569;
 }
 
 .native-checkbox {
@@ -299,8 +306,9 @@ function onHide(): void {
 }
 
 .exercise-name {
-  font-weight: 500;
+  font-weight: 700;
   font-size: 0.95rem;
+  color: #000;
 }
 
 .exercise-meta {
@@ -310,8 +318,9 @@ function onHide(): void {
 }
 
 .exercise-link {
-  color: #3b82f6;
+  color: #2563eb;
   font-size: 0.8rem;
+  font-weight: 600;
   text-decoration: none;
 }
 
@@ -321,7 +330,8 @@ function onHide(): void {
 
 .exercise-duration {
   font-size: 0.75rem;
-  color: #718096;
+  color: #475569;
+  font-weight: 600;
 }
 
 .remove-btn {
@@ -329,8 +339,9 @@ function onHide(): void {
   border: none;
   color: #ef4444;
   font-size: 1.2rem;
+  font-weight: bold;
   cursor: pointer;
-  opacity: 0.5;
+  opacity: 0.6;
 }
 
 .remove-btn:hover {
@@ -340,51 +351,57 @@ function onHide(): void {
 .duration-total {
   margin-top: 16px;
   font-size: 0.9rem;
-  color: #cbd5e1;
-  background: #1a1a24;
-  padding: 8px 12px;
-  border-radius: 6px;
-  border: 1px solid #2a2a35;
+  color: #0f172a;
+  font-weight: 700;
+  background: #f8fafc;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 2px solid #000;
 }
 
-/* Formulário e Botões Nativos (estilo roadmap.sh: clean e bold) */
+/* Formulário e Botões Nativos */
 .add-section {
   margin-top: 24px;
   padding-top: 20px;
-  border-top: 2px dashed #333;
+  border-top: 3px dashed #cbd5e1;
 }
 
 .add-section h3 {
-  font-size: 1rem;
-  margin: 0 0 12px 0;
-  color: #e2e8f0;
+  font-size: 1.1rem;
+  font-weight: 800;
+  margin: 0 0 16px 0;
+  color: #000;
 }
 
 .add-form {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .native-input {
-  background: #0f0f15;
-  border: 2px solid #333;
-  color: #fff;
+  background: #ffffff;
+  border: 2px solid #000;
+  color: #000;
   padding: 10px 12px;
-  border-radius: 6px;
-  font-size: 0.9rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
   outline: none;
   font-family: inherit;
+  box-shadow: 2px 2px 0 #000;
 }
 
 .native-input:focus {
-  border-color: #ffe500;
+  border-color: #2563eb;
+  box-shadow: 2px 2px 0 #2563eb;
 }
 
 .duration-inputs {
   display: flex;
   align-items: center;
   gap: 8px;
+  font-weight: bold;
 }
 
 .input-small {
@@ -394,14 +411,15 @@ function onHide(): void {
 .native-button {
   background: #ffe500;
   color: #000;
-  border: 2px solid #e5ce00;
-  padding: 10px 16px;
-  border-radius: 6px;
-  font-weight: 700;
-  font-size: 0.9rem;
+  border: 2px solid #000;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-weight: 800;
+  font-size: 0.95rem;
   cursor: pointer;
   font-family: inherit;
   transition: transform 0.1s, background 0.2s;
+  box-shadow: 2px 2px 0 #000;
 }
 
 .native-button:hover:not(:disabled) {
@@ -409,39 +427,41 @@ function onHide(): void {
 }
 
 .native-button:active:not(:disabled) {
-  transform: scale(0.98);
+  transform: translate(2px, 2px);
+  box-shadow: none;
 }
 
 .native-button:disabled {
-  background: #555;
-  border-color: #444;
-  color: #888;
+  background: #e2e8f0;
+  color: #94a3b8;
+  border-color: #cbd5e1;
+  box-shadow: none;
   cursor: not-allowed;
 }
 
 /* AI Section */
 .ai-section {
-  margin-top: 24px;
-  padding-top: 20px;
-  border-top: 2px dashed #333;
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 3px dashed #cbd5e1;
 }
 
 .ai-button {
   width: 100%;
-  background: #8b5cf6;
-  border-color: #7c3aed;
+  background: #a855f7;
   color: #fff;
 }
 
 .ai-button:hover:not(:disabled) {
-  background: #9f7aea;
+  background: #b165f8;
 }
 
 .ai-usage {
   font-size: 0.75rem;
-  color: #94a3b8;
+  color: #64748b;
   margin-top: 8px;
   text-align: center;
+  font-weight: 600;
 }
 
 .ai-usage.warning { color: #eab308; }
@@ -452,36 +472,42 @@ function onHide(): void {
   margin-top: 8px;
   font-size: 0.85rem;
   text-align: center;
+  font-weight: bold;
 }
 
 .ai-result {
   margin-top: 16px;
   padding: 16px;
-  background: #1a1525;
-  border: 2px solid #5b21b6;
+  background: #faf5ff;
+  border: 2px solid #9333ea;
   border-radius: 8px;
+  box-shadow: 2px 2px 0 #9333ea;
 }
 
 .ai-result h4 {
-  color: #c4b5fd;
+  color: #7e22ce;
   margin: 0 0 12px 0;
-  font-size: 1rem;
+  font-size: 1.1rem;
+  font-weight: 800;
 }
 
 .ai-result p {
   margin: 0 0 12px 0;
   font-size: 0.95rem;
-  line-height: 1.4;
+  line-height: 1.5;
+  color: #1e1b4b;
+  font-weight: 500;
 }
 
 .ai-result ul {
   margin: 0;
   padding-left: 20px;
-  color: #e2e8f0;
+  color: #312e81;
 }
 
 .ai-result li {
   margin-bottom: 6px;
   font-size: 0.9rem;
+  font-weight: 500;
 }
 </style>
