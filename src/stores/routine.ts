@@ -98,11 +98,11 @@ export const useRoutineStore = defineStore('routine', () => {
 
   async function syncFromCloud() {
     if (!auth.currentUser) return
-    const docRef = doc(db, 'users', auth.currentUser.uid, 'routine', 'main')
+    const docRef = doc(db, 'users', auth.currentUser.uid)
     try {
       const snapshot = await getDoc(docRef)
-      if (snapshot.exists()) {
-        nodes.value = snapshot.data().nodes
+      if (snapshot.exists() && snapshot.data().routine) {
+        nodes.value = snapshot.data().routine
         localStorage.setItem(STORAGE_KEY, JSON.stringify(nodes.value))
       } else {
         await saveToCloud()
@@ -114,9 +114,9 @@ export const useRoutineStore = defineStore('routine', () => {
 
   async function saveToCloud() {
     if (!auth.currentUser) return
-    const docRef = doc(db, 'users', auth.currentUser.uid, 'routine', 'main')
+    const docRef = doc(db, 'users', auth.currentUser.uid)
     try {
-      await setDoc(docRef, { nodes: nodes.value })
+      await setDoc(docRef, { routine: nodes.value }, { merge: true })
     } catch (err) {
       console.error('Failed to save routine to cloud', err)
     }

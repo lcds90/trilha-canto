@@ -41,6 +41,6 @@ Estes logs registram a migração do fluxo original para uma experiência de SPA
 ## 7. Integração de Autenticação Google e Firestore Sync
 - Implementação de Login social utilizando o Firebase Authentication (Google).
 - Sincronização do estado de rotina e ofensiva (streak) com o Firestore para persistência em nuvem.
-- Estrutura de dados refinada: `routine` e `streak` foram promovidas a subcoleções próprias diretas do documento do usuário (`users/{uid}/routine/main` e `users/{uid}/streak/main`), eliminando o agrupamento temporário em `data`.
+- Estrutura de dados refinada: `routine` e `streak` agora são salvas diretamente como propriedades no documento raiz do usuário (`users/{uid}`), utilizando `{ merge: true }` para não sobrescrever dados mutuamente.
 - Nova store `auth.ts` foi introduzida para gerenciar o estado da sessão e carregar as rotinas logo após o login.
 - Cabeçalho da barra lateral adaptado para exibir avatar/nome e os controles de login/logout.

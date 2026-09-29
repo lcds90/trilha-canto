@@ -214,5 +214,5 @@ routineStore.isAllCompleted   // boolean
 
 ## Persistência na Nuvem (Firestore)
 Foram adicionadas funções para sincronizar o progresso no Firestore quando o usuário estiver logado:
-- `syncFromCloud()`: Busca a rotina salva em `users/{uid}/routine/main`.
+- `syncFromCloud()`: Busca a rotina salva em `users/{uid}`.
 - `saveToCloud()`: Salva o estado atual na nuvem, acionado automaticamente a cada chamada de `saveToStorage()`.

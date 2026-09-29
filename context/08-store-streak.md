@@ -150,5 +150,5 @@ streakStore.recordPractice(
 
 ## Persistência na Nuvem (Firestore)
 Foram adicionadas funções para sincronizar a ofensiva no Firestore quando o usuário estiver logado:
-- `syncFromCloud()`: Busca o histórico em `users/{uid}/streak/main`.
+- `syncFromCloud()`: Busca o histórico em `users/{uid}`.
 - `saveToCloud()`: Salva o histórico atual na nuvem, acionado automaticamente a cada chamada de `saveHistory()`.

@@ -36,11 +36,11 @@ export const useStreakStore = defineStore('streak', () => {
     const { auth, db } = await import('@/lib/firebase')
     const { doc, getDoc } = await import('firebase/firestore')
     if (!auth.currentUser) return
-    const docRef = doc(db, 'users', auth.currentUser.uid, 'streak', 'main')
+    const docRef = doc(db, 'users', auth.currentUser.uid)
     try {
       const snapshot = await getDoc(docRef)
-      if (snapshot.exists()) {
-        history.value = snapshot.data().history
+      if (snapshot.exists() && snapshot.data().streak) {
+        history.value = snapshot.data().streak
         localStorage.setItem(STORAGE_KEY, JSON.stringify(history.value))
       } else {
         await saveToCloud()
@@ -54,9 +54,9 @@ export const useStreakStore = defineStore('streak', () => {
     const { auth, db } = await import('@/lib/firebase')
     const { doc, setDoc } = await import('firebase/firestore')
     if (!auth.currentUser) return
-    const docRef = doc(db, 'users', auth.currentUser.uid, 'streak', 'main')
+    const docRef = doc(db, 'users', auth.currentUser.uid)
     try {
-      await setDoc(docRef, { history: history.value })
+      await setDoc(docRef, { streak: history.value }, { merge: true })
     } catch (err) {
       console.error('Failed to save streak to cloud', err)
     }
