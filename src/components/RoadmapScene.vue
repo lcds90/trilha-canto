@@ -513,6 +513,10 @@ const onNodeClick = (index: number, e: MouseEvent) => {
   background: rgba(34, 197, 94, 0.8) !important;
 }
 
+.completed-list .list-title {
+  color: #22c55e;
+}
+
 .list-title {
   color: #ffe500;
   font-weight: 800;
