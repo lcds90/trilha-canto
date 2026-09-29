@@ -147,3 +147,8 @@ streakStore.recordPractice(
 | `[09-26, 09-27]` | 09-28 | `2` (ontem + anteontem) |
 | `[09-25, 09-27]` | 09-28 | `1` (só ontem, gap no 26) |
 | `[09-20, 09-21, 09-22]` | 09-28 | `0` (último foi há 6 dias) |
+
+## Persistência na Nuvem (Firestore)
+Foram adicionadas funções para sincronizar a ofensiva no Firestore quando o usuário estiver logado:
+- `syncFromCloud()`: Busca o histórico em `users/{uid}/streak/main`.
+- `saveToCloud()`: Salva o histórico atual na nuvem, acionado automaticamente a cada chamada de `saveHistory()`.

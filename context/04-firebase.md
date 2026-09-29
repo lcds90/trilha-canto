@@ -12,7 +12,9 @@
 ## Código Completo
 
 ```typescript
+import { getFirestore } from 'firebase/firestore'
 import { initializeApp } from 'firebase/app'
+import { getAuth } from 'firebase/auth'
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -27,14 +29,16 @@ const firebaseConfig = {
 const firebaseApp = initializeApp(firebaseConfig)
 
 export default firebaseApp
+
+export const db = getFirestore(firebaseApp)
+export const auth = getAuth(firebaseApp)
 ```
 
 ## Como é usado
 - Importado por `src/lib/ai.ts` para inicializar o serviço de IA
-- Futuro: será usado para Firestore, Auth, etc.
+- Importado pelas stores `routine.ts`, `streak.ts` e `auth.ts` para realizar operações no Firestore e autenticação.
 
 ## Notas
-- **NÃO** importar Firestore ou Auth aqui (plano Spark, funcionalidade futura)
 - `import.meta.env` é a forma do Vite de acessar variáveis de ambiente
 - Variáveis com prefixo `VITE_` são expostas ao client-side
 - As chaves do Firebase são de configuração pública (não são secrets de API privada)

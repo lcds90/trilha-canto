@@ -37,3 +37,10 @@ Este documento resume as melhorias, correções de bugs e evoluções de UI/UX a
 - Correção crítica no "Reset Diário": Anteriormente os itens da checklist ficavam cinzas no exato momento da conclusão da sessão, anulando a satisfação do usuário de ver tudo completado. Agora o \`routineStore.resetDaily()\` foi movido para a inicialização no \`App.vue\`. Compara-se a data em localStorage (\`trilha-canto-last-active\`) e o reset do diagrama visual só ocorre quando detecta a virada do dia para a próxima sessão de treinos.
 
 Estes logs registram a migração do fluxo original para uma experiência de SPA interativa, context-aware e totalmente polida.
+
+## 7. Integração de Autenticação Google e Firestore Sync
+- Implementação de Login social utilizando o Firebase Authentication (Google).
+- Sincronização do estado de rotina e ofensiva (streak) com o Firestore para persistência em nuvem.
+- Estrutura de dados refinada: `routine` e `streak` foram promovidas a subcoleções próprias diretas do documento do usuário (`users/{uid}/routine/main` e `users/{uid}/streak/main`), eliminando o agrupamento temporário em `data`.
+- Nova store `auth.ts` foi introduzida para gerenciar o estado da sessão e carregar as rotinas logo após o login.
+- Cabeçalho da barra lateral adaptado para exibir avatar/nome e os controles de login/logout.
