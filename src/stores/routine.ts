@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { RoadmapNode, VideoMedia } from '@/types'
+import { doc, getDoc, setDoc } from 'firebase/firestore'
+import { db, auth } from '@/lib/firebase'
 
 const STORAGE_KEY = 'trilha-canto-routine'
 
@@ -92,11 +94,38 @@ export const useRoutineStore = defineStore('routine', () => {
     return structuredClone(DEFAULT_NODES)
   }
 
-  function saveToStorage(): void {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(nodes.value))
+  const nodes = ref<RoadmapNode[]>(loadFromStorage())
+
+  async function syncFromCloud() {
+    if (!auth.currentUser) return
+    const docRef = doc(db, 'users', auth.currentUser.uid, 'data', 'routine')
+    try {
+      const snapshot = await getDoc(docRef)
+      if (snapshot.exists()) {
+        nodes.value = snapshot.data().nodes
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(nodes.value))
+      } else {
+        await saveToCloud()
+      }
+    } catch (err) {
+      console.error('Failed to sync routine from cloud', err)
+    }
   }
 
-  const nodes = ref<RoadmapNode[]>(loadFromStorage())
+  async function saveToCloud() {
+    if (!auth.currentUser) return
+    const docRef = doc(db, 'users', auth.currentUser.uid, 'data', 'routine')
+    try {
+      await setDoc(docRef, { nodes: nodes.value })
+    } catch (err) {
+      console.error('Failed to save routine to cloud', err)
+    }
+  }
+
+  function saveToStorage(): void {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(nodes.value))
+    saveToCloud()
+  }
 
   const totalDuration = computed<number>(() => {
     let sum = 0
@@ -188,5 +217,6 @@ export const useRoutineStore = defineStore('routine', () => {
     resetSectionToDefault,
     resetDaily,
     saveToStorage,
+    syncFromCloud,
   }
 })

@@ -3,6 +3,7 @@ import { computed, inject, ref, watch } from 'vue'
 import { usePlayerStore } from '@/stores/player'
 import { useRoutineStore } from '@/stores/routine'
 import { useStreakStore } from '@/stores/streak'
+import { useAuthStore } from '@/stores/auth'
 import StreakPanel from '@/components/StreakPanel.vue'
 import YouTubePlayer from '@/components/YouTubePlayer.vue'
 import DailyAdvice from '@/components/DailyAdvice.vue'
@@ -12,6 +13,7 @@ import type { VideoMedia } from '@/types'
 const playerStore = usePlayerStore()
 const routineStore = useRoutineStore()
 const streakStore = useStreakStore()
+const authStore = useAuthStore()
 
 const toggleSidebarPosition = inject('toggleSidebarPosition') as () => void
 const isHeaderExpanded = ref(true)
@@ -214,7 +216,8 @@ function removeVideoFromExercise(ex: any, vIndex: number) {
     <div class="app-header-collapsible">
       <div class="collapsible-header" :class="{ 'no-pointer': playerStore.editModeNodeId }" @click="!playerStore.editModeNodeId && (isHeaderExpanded = !isHeaderExpanded)">
         <h2 class="app-title">
-          🎤 Trilha de Canto
+          <span v-if="authStore.user">Olá, {{ authStore.user.displayName?.split(' ')[0] || 'Cantor' }}</span>
+          <span v-else>🎤 Trilha de Canto</span>
           <span v-if="hasNewTip && !isHeaderExpanded" class="new-tip-dot" title="Nova dica de IA disponível!">✨</span>
         </h2>
         <div class="header-actions" v-if="!playerStore.editModeNodeId">
@@ -223,6 +226,22 @@ function removeVideoFromExercise(ex: any, vIndex: number) {
       </div>
       <Transition name="expand">
         <div class="collapsible-content" v-show="isHeaderExpanded && !playerStore.editModeNodeId">
+          <div class="auth-section">
+            <template v-if="authStore.user">
+              <div class="auth-user-info">
+                <img v-if="authStore.user.photoURL" :src="authStore.user.photoURL" class="auth-avatar" alt="Avatar" />
+                <span class="auth-email">{{ authStore.user.email }}</span>
+              </div>
+              <button class="auth-btn" @click="authStore.logout()">Sair</button>
+            </template>
+            <template v-else>
+              <div class="auth-msg-container">
+                <span class="auth-icon">☁️</span>
+                <span class="auth-msg">Faça login para sincronizar progresso.</span>
+              </div>
+              <button class="auth-btn login-btn" @click="authStore.login()">Logar com Google</button>
+            </template>
+          </div>
           <div class="side-actions">
             <button class="toggle-side-btn" @click.stop="toggleSidebarPosition">⇋ Trocar Lado</button>
           </div>
@@ -655,6 +674,78 @@ function removeVideoFromExercise(ex: any, vIndex: number) {
   gap: 20px;
   flex-direction: column;
   align-items: stretch;
+}
+
+.auth-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f8fafc;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px dashed #cbd5e1;
+  gap: 12px;
+}
+
+.auth-user-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.auth-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid #e2e8f0;
+}
+
+.auth-email {
+  font-size: 0.85rem;
+  color: #475569;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+
+.auth-msg-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.auth-msg {
+  font-size: 0.85rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.auth-btn {
+  background: #e2e8f0;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.auth-btn:hover {
+  background: #cbd5e1;
+}
+
+.login-btn {
+  background: #3b82f6;
+  color: #ffffff;
+}
+
+.login-btn:hover {
+  background: #2563eb;
 }
 
 .sidebar-header {

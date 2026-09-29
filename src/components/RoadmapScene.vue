@@ -91,7 +91,7 @@ const stars = ref(Array.from({ length: 60 }).map(() => ({
   animationDuration: `${Math.random() * 3 + 2}s`
 })))
 
-let floatingTweens: gsap.core.Tween[] = []
+const floatingTweens: gsap.core.Tween[] = []
 
 onMounted(() => {
   // Animate floating nodes with GSAP

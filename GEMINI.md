@@ -11,10 +11,10 @@ App de rotina interativa para guiar a prática diária de canto. O usuário nave
 - **Build:** Vite (^8.2)
 - **Animações e Câmera:** GSAP (^3.12) — cena 2D/3D simulada usando DOM nativo e SVG paths
 - **UI Components:** Native HTML/CSS
-- **Estado:** Pinia (^4.0) — stores: routine, player, streak, aiUsage
+- **Estado:** Pinia (^4.0) — stores: routine, player, streak, aiUsage, auth
 - **Backend:** Firebase (plano Spark) — apenas AI Logic
 - **IA:** Firebase AI Logic + Gemini 2.5 Flash — análise de seções
-- **Persistência:** localStorage (Firestore planejado para futuro)
+- **Persistência:** localStorage (offline) e Firestore (sync cloud via Autenticação Google)
 
 ## Estrutura de Seções (Roadmap)
 
@@ -47,7 +47,7 @@ App de rotina interativa para guiar a prática diária de canto. O usuário nave
 
 ### Sidebar Principal (Player & Status)
 - Disposição responsiva que pode ser redimensionada e trocada de lado (Esquerda/Direita)
-- **Cabeçalho Expansível:** Contém o título e oculta o painel de "Streak" (Ofensiva)
+- **Cabeçalho Expansível:** Contém o título, seção de Autenticação (Login com Google/Avatar) e oculta o painel de "Streak" (Ofensiva)
 - **Progresso:** Calcula o avanço geral baseado no total de *exercícios* concluídos, não só seções
 - **Controles:** ⏮, ▶/⏸, ⏭ (Com emissão animada de emojis ao clicar)
 - **Toggles Lado a Lado:** Checkboxes customizados com animações fluidas para "Avançar automaticamente" e "Marcar como Concluído"
@@ -70,6 +70,8 @@ App de rotina interativa para guiar a prática diária de canto. O usuário nave
 - Config via `.env` com prefixo `VITE_`
 - Projeto: `app-trilha-de-canto`
 - Limites Spark: 1500 req/dia Gemini Flash, 10 req/min
+- Auth: Google Authentication
+- DB: Firestore para sincronização de rotina e streak entre dispositivos
 - Sem Cloud Storage (vídeos por URL externa)
 
 ## Design e Estilização
@@ -85,7 +87,7 @@ App de rotina interativa para guiar a prática diária de canto. O usuário nave
 src/
 ├── lib/firebase.ts, ai.ts
 ├── types/index.ts
-├── stores/routine.ts, player.ts, streak.ts, aiUsage.ts
+├── stores/routine.ts, player.ts, streak.ts, aiUsage.ts, auth.ts
 ├── composables/useThreeScene.ts
 ├── components/RoadmapScene.vue, ExerciseModal.vue, PlayerControls.vue, StreakPanel.vue
 ├── App.vue, main.ts, router/index.ts
@@ -94,5 +96,3 @@ src/
 ## Plano Futuro (Blaze)
 - Migrar para plano Blaze (custo zero dentro dos limites)
 - Ativar Cloud Storage para upload de vídeos de prática
-- Adicionar Firestore para persistência e sync entre dispositivos
-- Auth para login do usuário

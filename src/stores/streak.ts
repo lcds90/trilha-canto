@@ -30,12 +30,42 @@ export const useStreakStore = defineStore('streak', () => {
     return []
   }
 
-  function saveHistory(): void {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(history.value))
+  const history = ref<DayRecord[]>(loadHistory())
+
+  async function syncFromCloud() {
+    const { auth, db } = await import('@/lib/firebase')
+    const { doc, getDoc } = await import('firebase/firestore')
+    if (!auth.currentUser) return
+    const docRef = doc(db, 'users', auth.currentUser.uid, 'data', 'streak')
+    try {
+      const snapshot = await getDoc(docRef)
+      if (snapshot.exists()) {
+        history.value = snapshot.data().history
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(history.value))
+      } else {
+        await saveToCloud()
+      }
+    } catch (err) {
+      console.error('Failed to sync streak from cloud', err)
+    }
   }
 
-  // ============ STATE ============
-  const history = ref<DayRecord[]>(loadHistory())
+  async function saveToCloud() {
+    const { auth, db } = await import('@/lib/firebase')
+    const { doc, setDoc } = await import('firebase/firestore')
+    if (!auth.currentUser) return
+    const docRef = doc(db, 'users', auth.currentUser.uid, 'data', 'streak')
+    try {
+      await setDoc(docRef, { history: history.value })
+    } catch (err) {
+      console.error('Failed to save streak to cloud', err)
+    }
+  }
+
+  function saveHistory(): void {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(history.value))
+    saveToCloud()
+  }
 
   // ============ GETTERS ============
   const currentStreak = computed<number>(() => {
@@ -112,5 +142,6 @@ export const useStreakStore = defineStore('streak', () => {
     todayRecord,
     last30Days,
     recordPractice,
+    syncFromCloud,
   }
 })
