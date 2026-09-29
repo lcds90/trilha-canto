@@ -98,7 +98,7 @@ export const useRoutineStore = defineStore('routine', () => {
 
   async function syncFromCloud() {
     if (!auth.currentUser) return
-    const docRef = doc(db, 'users', auth.currentUser.uid, 'data', 'routine')
+    const docRef = doc(db, 'users', auth.currentUser.uid, 'routine', 'main')
     try {
       const snapshot = await getDoc(docRef)
       if (snapshot.exists()) {
@@ -114,7 +114,7 @@ export const useRoutineStore = defineStore('routine', () => {
 
   async function saveToCloud() {
     if (!auth.currentUser) return
-    const docRef = doc(db, 'users', auth.currentUser.uid, 'data', 'routine')
+    const docRef = doc(db, 'users', auth.currentUser.uid, 'routine', 'main')
     try {
       await setDoc(docRef, { nodes: nodes.value })
     } catch (err) {

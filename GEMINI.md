@@ -71,7 +71,9 @@ App de rotina interativa para guiar a prática diária de canto. O usuário nave
 - Projeto: `app-trilha-de-canto`
 - Limites Spark: 1500 req/dia Gemini Flash, 10 req/min
 - Auth: Google Authentication
-- DB: Firestore para sincronização de rotina e streak entre dispositivos
+- DB: Firestore para sincronização de rotina e streak entre dispositivos. Estrutura:
+  - `users/{uid}/routine/main`
+  - `users/{uid}/streak/main`
 - Sem Cloud Storage (vídeos por URL externa)
 
 ## Design e Estilização

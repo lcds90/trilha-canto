@@ -36,7 +36,7 @@ export const useStreakStore = defineStore('streak', () => {
     const { auth, db } = await import('@/lib/firebase')
     const { doc, getDoc } = await import('firebase/firestore')
     if (!auth.currentUser) return
-    const docRef = doc(db, 'users', auth.currentUser.uid, 'data', 'streak')
+    const docRef = doc(db, 'users', auth.currentUser.uid, 'streak', 'main')
     try {
       const snapshot = await getDoc(docRef)
       if (snapshot.exists()) {
@@ -54,7 +54,7 @@ export const useStreakStore = defineStore('streak', () => {
     const { auth, db } = await import('@/lib/firebase')
     const { doc, setDoc } = await import('firebase/firestore')
     if (!auth.currentUser) return
-    const docRef = doc(db, 'users', auth.currentUser.uid, 'data', 'streak')
+    const docRef = doc(db, 'users', auth.currentUser.uid, 'streak', 'main')
     try {
       await setDoc(docRef, { history: history.value })
     } catch (err) {
