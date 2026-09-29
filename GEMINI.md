@@ -48,9 +48,10 @@ App de rotina interativa para guiar a prática diária de canto. O usuário nave
 
 ### Sidebar Principal (Player & Status)
 - Disposição responsiva que pode ser redimensionada e trocada de lado (Esquerda/Direita)
-- **Cabeçalho Expansível:** Contém o título, seção de Autenticação (Login com Google/Avatar) e oculta o painel de "Streak" (Ofensiva)
+- **Cabeçalho Expansível:** Contém o título, seção de Autenticação (Login com Google/Avatar) e oculta o painel de "Streak" (Ofensiva), o conselho de IA e os Atalhos de Teclado.
 - **Progresso:** Calcula o avanço geral baseado no total de *exercícios* concluídos, não só seções
 - **Controles:** ⏮, ▶/⏸, ⏭ (Com emissão animada de emojis ao clicar)
+- **Atalhos de Teclado Globais:** Space (Play/Pause), Setas Esquerda/Direita (Voltar/Avançar), C (Concluir), H (Header), E (Modo de Edição), Esc (Sair da edição).
 - **Toggles Lado a Lado:** Checkboxes customizados com animações fluidas para "Avançar automaticamente" e "Marcar como Concluído"
 - Espaço dedicado (16:9) para exibir vídeos de YouTube incorporados
 - **Auto-advance:** Avança automaticamente 1.5s após marcar como concluído

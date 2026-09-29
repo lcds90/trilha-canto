@@ -54,8 +54,9 @@ watch(() => playerStore.activeNodeIndex, () => {
   border: 2px solid #e2e8f0;
   border-radius: 12px;
   padding: 16px;
-  margin-bottom: 20px;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  flex: 1;
+  margin-right: 12px;
 }
 
 .advice-header {

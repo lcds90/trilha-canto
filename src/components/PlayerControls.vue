@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject, ref, watch } from 'vue'
+import { computed, inject, ref, watch, onMounted, onUnmounted } from 'vue'
 import { usePlayerStore } from '@/stores/player'
 import { useRoutineStore } from '@/stores/routine'
 import { useStreakStore } from '@/stores/streak'
@@ -21,6 +21,11 @@ const isHeaderExpanded = ref(true)
 const hasNewTip = ref(true)
 watch(isHeaderExpanded, (val) => {
   if (val) hasNewTip.value = false
+})
+
+const shortcutsEnabled = ref(localStorage.getItem('trilha-canto-shortcuts') !== 'false')
+watch(shortcutsEnabled, (val) => {
+  localStorage.setItem('trilha-canto-shortcuts', val.toString())
 })
 
 const animatingToggle = ref<string | null>(null)
@@ -229,6 +234,62 @@ function confirmReset() {
   }
 }
 
+function handleGlobalKeydown(e: KeyboardEvent) {
+  const target = e.target as HTMLElement;
+  if (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable) {
+    return;
+  }
+  
+  if (e.key === 'Escape') {
+    if (playerStore.editModeNodeId) {
+      exitEditMode();
+    }
+    return;
+  }
+
+  if (!shortcutsEnabled.value) return;
+
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+  switch (e.key.toLowerCase()) {
+    case ' ':
+      e.preventDefault();
+      playerStore.togglePlay();
+      break;
+    case 'arrowleft':
+      e.preventDefault();
+      playerStore.prev();
+      break;
+    case 'arrowright':
+      e.preventDefault();
+      playerStore.next();
+      break;
+    case 'c':
+      e.preventDefault();
+      handleCompletedToggle();
+      break;
+    case 'h':
+      e.preventDefault();
+      if (!playerStore.editModeNodeId) {
+        isHeaderExpanded.value = !isHeaderExpanded.value;
+      }
+      break;
+    case 'e':
+      e.preventDefault();
+      if (!playerStore.editModeNodeId && activeNode.value) {
+        playerStore.editModeNodeId = activeNode.value.id;
+      }
+      break;
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', handleGlobalKeydown);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleGlobalKeydown);
+});
 </script>
 
 <template>
@@ -265,10 +326,28 @@ function confirmReset() {
             </template>
           </div>
           <div class="side-actions">
+            <DailyAdvice />
             <button class="toggle-side-btn" @click.stop="toggleSidebarPosition">⇋ Trocar Lado</button>
           </div>
           <StreakPanel />
-          <DailyAdvice />
+          <div class="shortcuts-info">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <h4 class="shortcuts-title" style="margin: 0;">Atalhos de Teclado</h4>
+              <label class="auto-toggle" style="font-size: 0.8rem; gap: 6px;">
+                <input type="checkbox" class="native-checkbox neutral-checkbox" style="width: 14px; height: 14px;" v-model="shortcutsEnabled" />
+                <span>Ativos</span>
+              </label>
+            </div>
+            <div class="shortcuts-list" :style="{ opacity: shortcutsEnabled ? 1 : 0.4, pointerEvents: shortcutsEnabled ? 'auto' : 'none', filter: shortcutsEnabled ? 'none' : 'grayscale(1)' }">
+              <div class="shortcut-item"><kbd>Espaço</kbd> Play/Pause</div>
+              <div class="shortcut-item"><kbd>←</kbd> Voltar</div>
+              <div class="shortcut-item"><kbd>→</kbd> Avançar</div>
+              <div class="shortcut-item"><kbd>C</kbd> Concluir</div>
+              <div class="shortcut-item"><kbd>H</kbd> Header</div>
+              <div class="shortcut-item"><kbd>E</kbd> Editar</div>
+              <div class="shortcut-item"><kbd>Esc</kbd> Sair</div>
+            </div>
+          </div>
         </div>
       </Transition>
     </div>
@@ -505,8 +584,47 @@ function confirmReset() {
 
 .side-actions {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 12px;
+}
+
+.shortcuts-info {
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  padding: 12px;
+  border-radius: 8px;
+}
+
+.shortcuts-title {
+  font-size: 0.85rem;
+  color: #475569;
+  margin: 0 0 8px 0;
+  text-transform: uppercase;
+}
+
+.shortcuts-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.shortcut-item {
+  font-size: 0.75rem;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+kbd {
+  background: #e2e8f0;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-family: monospace;
+  font-weight: bold;
+  color: #0f172a;
 }
 
 .edit-mode-container {
