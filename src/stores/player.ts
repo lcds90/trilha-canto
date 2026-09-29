@@ -19,7 +19,7 @@ export const usePlayerStore = defineStore('player', () => {
   const activeExercise = computed(() => activeNode.value && activeExerciseIndex.value !== null ? activeNode.value.exercises[activeExerciseIndex.value] : null)
   
   const currentVideo = computed(() => {
-    const vids = activeExercise.value?.videos || []
+    const vids = activeExercise.value?.media || activeExercise.value?.videos || []
     if (vids.length > 0 && activeVideoIndex.value < vids.length) {
       return vids[activeVideoIndex.value]
     }
@@ -45,7 +45,7 @@ export const usePlayerStore = defineStore('player', () => {
   // ============ ACTIONS ============
   function next(): void {
     if (!activeNode.value || activeNodeIndex.value === null || activeExerciseIndex.value === null) return
-    const vids = activeExercise.value?.videos || []
+    const vids = activeExercise.value?.media || activeExercise.value?.videos || []
     if (vids.length > 1 && activeVideoIndex.value < vids.length - 1) {
       activeVideoIndex.value++
     } else if (activeExerciseIndex.value < activeNode.value.exercises.length - 1) {
@@ -60,7 +60,7 @@ export const usePlayerStore = defineStore('player', () => {
 
   function prev(): void {
     if (activeNodeIndex.value === null || activeExerciseIndex.value === null) return
-    const vids = activeExercise.value?.videos || []
+    const vids = activeExercise.value?.media || activeExercise.value?.videos || []
     if (vids.length > 1 && activeVideoIndex.value > 0) {
       activeVideoIndex.value--
     } else if (activeExerciseIndex.value > 0) {

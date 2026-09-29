@@ -7,12 +7,23 @@
 ## Código Completo
 
 ```typescript
+export interface MediaItem {
+  id: string
+  type: 'video' | 'reference'
+  url: string
+  title?: string
+  duration?: number
+}
+
 export interface Exercise {
-  id: string              // Gerado com `${nodeId}-${Date.now()}`
-  name: string            // Nome do exercício (ex: "Vibração de língua")
-  videoUrl?: string       // URL de vídeo externo (YouTube, etc.)
-  videoDuration?: number  // Duração em SEGUNDOS (ex: 120 = 2min)
-  completed: boolean      // Se concluído na sessão atual
+  id: string
+  name: string
+  notes?: string
+  media?: MediaItem[]
+  videos?: { url: string; duration?: number }[] // DEPRECATED
+  videoUrl?: string // DEPRECATED
+  videoDuration?: number // DEPRECATED
+  completed: boolean
 }
 
 export interface RoadmapNode {

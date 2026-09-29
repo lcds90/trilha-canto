@@ -16,6 +16,8 @@
     "format": "prettier --write --experimental-cli src/"
   },
   "dependencies": {
+    "@tiptap/starter-kit": "^3.31.3",
+    "@tiptap/vue-3": "^3.31.3",
     "firebase": "^12.19.0",
     "gsap": "^3.15.0",
     "pinia": "^4.0.3",

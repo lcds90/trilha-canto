@@ -78,10 +78,13 @@ export const useRoutineStore = defineStore('routine', () => {
         const parsed = JSON.parse(stored) as RoadmapNode[]
         for (const node of parsed) {
           for (const ex of node.exercises) {
-            if (!ex.videos) {
-              ex.videos = []
-              if (ex.videoUrl) {
-                ex.videos.push({ url: ex.videoUrl, duration: ex.videoDuration })
+            // Migrar videos antigos para media
+            if (!ex.media) {
+              ex.media = []
+              if (ex.videos && ex.videos.length > 0) {
+                ex.media.push(...ex.videos.map(v => ({ id: `mig-${Date.now()}-${Math.random()}`, type: 'video' as const, url: v.url, duration: v.duration })))
+              } else if (ex.videoUrl) {
+                ex.media.push({ id: `mig-${Date.now()}-${Math.random()}`, type: 'video', url: ex.videoUrl, duration: ex.videoDuration })
               }
             }
           }
@@ -131,7 +134,9 @@ export const useRoutineStore = defineStore('routine', () => {
     let sum = 0
     for (const node of nodes.value) {
       for (const exercise of node.exercises) {
-        if (exercise.videos && exercise.videos.length > 0) {
+        if (exercise.media && exercise.media.length > 0) {
+          sum += exercise.media.reduce((acc, m) => acc + (m.duration || 0), 0)
+        } else if (exercise.videos && exercise.videos.length > 0) {
           sum += exercise.videos.reduce((acc, v) => acc + (v.duration || 0), 0)
         } else if (exercise.videoDuration) {
           sum += exercise.videoDuration
@@ -159,11 +164,11 @@ export const useRoutineStore = defineStore('routine', () => {
     saveToStorage()
   }
 
-  function addExercise(nodeId: string, name: string, videos?: VideoMedia[]): void {
+  function addExercise(nodeId: string, name: string, media?: import('@/types').MediaItem[], notes?: string): void {
     const node = nodes.value.find(n => n.id === nodeId)
     if (!node) return
     const id = `${nodeId}-${Date.now()}`
-    node.exercises.push({ id, name, videos: videos || [], completed: false })
+    node.exercises.push({ id, name, media: media || [], notes: notes || '', completed: false })
     node.completed = false
     saveToStorage()
   }

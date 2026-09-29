@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { useRoutineStore } from '@/stores/routine'
 import { useAIUsageStore } from '@/stores/aiUsage'
 import { analyzeSection } from '@/lib/ai'
+import RichTextEditor from './RichTextEditor.vue'
 import type { AIAnalysis } from '@/types'
 
 const props = defineProps<{
@@ -17,9 +18,17 @@ const routineStore = useRoutineStore()
 const aiUsageStore = useAIUsageStore()
 
 const newName = ref('')
-const newVideoUrl = ref('')
+const newMediaType = ref<'video' | 'reference'>('video')
+const newMediaUrl = ref('')
+const newMediaTitle = ref('')
 const newDurationMin = ref('')
 const newDurationSec = ref('')
+const newNotes = ref('')
+
+const editingId = ref<string | null>(null)
+const editName = ref('')
+const editNotes = ref('')
+const editMedia = ref<import('@/types').MediaItem[]>([])
 const aiAnalysis = ref<AIAnalysis | null>(null)
 const aiLoading = ref(false)
 const aiError = ref('')
@@ -31,7 +40,13 @@ const completedCount = computed(() =>
 )
 
 const totalNodeDuration = computed(() =>
-  node.value.exercises.reduce((sum, e) => sum + (e.videos?.reduce((a, b) => a + (b.duration || 0), 0) || e.videoDuration || 0), 0)
+  node.value.exercises.reduce((sum, e) => {
+    let exSum = 0
+    if (e.media) exSum += e.media.reduce((a, b) => a + (b.duration || 0), 0)
+    else if (e.videos) exSum += e.videos.reduce((a, b) => a + (b.duration || 0), 0)
+    else if (e.videoDuration) exSum += e.videoDuration
+    return sum + exSum
+  }, 0)
 )
 
 function toggleExercise(exerciseId: string): void {
@@ -44,16 +59,59 @@ function addExercise(): void {
   const seconds = parseInt(newDurationSec.value) || 0
   const totalSeconds = minutes * 60 + seconds
   
+  const mediaItems: import('@/types').MediaItem[] = []
+  if (newMediaUrl.value.trim()) {
+    mediaItems.push({
+      id: `media-${Date.now()}`,
+      type: newMediaType.value,
+      url: newMediaUrl.value.trim(),
+      title: newMediaTitle.value.trim() || undefined,
+      duration: totalSeconds > 0 ? totalSeconds : undefined
+    })
+  }
+  
   routineStore.addExercise(
     node.value.id,
     newName.value.trim(),
-    newVideoUrl.value.trim() ? [{ url: newVideoUrl.value.trim(), duration: totalSeconds > 0 ? totalSeconds : undefined }] : undefined
+    mediaItems,
+    newNotes.value
   )
   
   newName.value = ''
-  newVideoUrl.value = ''
+  newNotes.value = ''
+  newMediaUrl.value = ''
+  newMediaTitle.value = ''
   newDurationMin.value = ''
   newDurationSec.value = ''
+  newMediaType.value = 'video'
+}
+
+function startEdit(exercise: any) {
+  editingId.value = exercise.id
+  editName.value = exercise.name
+  editNotes.value = exercise.notes || ''
+  editMedia.value = JSON.parse(JSON.stringify(exercise.media || []))
+  
+  // Migrate old videos if present in edit mode for simplicity
+  if (!editMedia.value.length && exercise.videos?.length) {
+    editMedia.value = exercise.videos.map((v: any) => ({
+      id: `mig-${Date.now()}`, type: 'video', url: v.url, duration: v.duration
+    }))
+  }
+}
+
+function saveEdit() {
+  if (!editingId.value || !editName.value.trim()) return
+  routineStore.updateExercise(node.value.id, editingId.value, {
+    name: editName.value.trim(),
+    notes: editNotes.value,
+    media: editMedia.value.filter(m => m.url.trim() !== '')
+  })
+  editingId.value = null
+}
+
+function cancelEdit() {
+  editingId.value = null
 }
 
 function removeExercise(exerciseId: string): void {
@@ -107,27 +165,75 @@ function onHide(): void {
         <div class="modal-progress">{{ completedCount }} / {{ node.exercises.length }} exercícios concluídos</div>
         
         <div class="exercise-list">
-          <label 
-            v-for="exercise in node.exercises" 
-            :key="exercise.id"
-            class="exercise-item"
-            :class="{ completed: exercise.completed }"
-          >
-            <input 
-              type="checkbox"
-              class="native-checkbox"
-              :checked="exercise.completed" 
-              @change="toggleExercise(exercise.id)" 
-            />
-            <div class="exercise-info">
-              <span class="exercise-name">{{ exercise.name }}</span>
-              <div class="exercise-meta">
-                <a v-if="exercise.videos && exercise.videos.length > 0" :href="exercise.videos?.[0]?.url" target="_blank" class="exercise-link" @click.stop>🎬 Ver vídeo</a>
-                <span v-if="exercise.videos && exercise.videos.length > 0 && exercise.videos?.[0]?.duration" class="exercise-duration">{{ formatDuration(exercise.videos?.reduce((a, b) => a + (b.duration || 0), 0) || 0) }}</span>
+          <template v-for="exercise in node.exercises" :key="exercise.id">
+            <!-- Modo de Visualização -->
+            <label 
+              v-if="editingId !== exercise.id"
+              class="exercise-item"
+              :class="{ completed: exercise.completed }"
+            >
+              <input 
+                type="checkbox"
+                class="native-checkbox"
+                :checked="exercise.completed" 
+                @change="toggleExercise(exercise.id)" 
+              />
+              <div class="exercise-info">
+                <span class="exercise-name">{{ exercise.name }}</span>
+                <div class="exercise-meta" v-if="(exercise.media && exercise.media.length) || (exercise.videos && exercise.videos.length)">
+                  <template v-if="exercise.media && exercise.media.length">
+                    <template v-for="m in exercise.media" :key="m.id">
+                      <a :href="m.url" target="_blank" class="exercise-link" @click.stop>
+                        {{ m.type === 'video' ? '🎬' : '📄' }} {{ m.title || (m.type === 'video' ? 'Ver vídeo' : 'Ver referência') }}
+                      </a>
+                      <span v-if="m.type === 'video' && m.duration" class="exercise-duration">{{ formatDuration(m.duration) }}</span>
+                    </template>
+                  </template>
+                  <template v-else-if="exercise.videos && exercise.videos.length">
+                    <a :href="exercise.videos?.[0]?.url" target="_blank" class="exercise-link" @click.stop>🎬 Ver vídeo</a>
+                    <span v-if="exercise.videos?.[0]?.duration" class="exercise-duration">{{ formatDuration(exercise.videos[0].duration!) }}</span>
+                  </template>
+                </div>
+                <div v-if="exercise.notes" class="exercise-notes-view" v-html="exercise.notes"></div>
+              </div>
+              <div class="exercise-actions">
+                <button class="icon-btn" @click.prevent="startEdit(exercise)" title="Editar">✏️</button>
+                <button class="remove-btn" @click.prevent="removeExercise(exercise.id)" title="Remover">×</button>
+              </div>
+            </label>
+
+            <!-- Modo de Edição -->
+            <div v-else class="exercise-item edit-mode">
+              <div class="edit-form">
+                <input type="text" v-model="editName" placeholder="Nome do exercício" class="native-input" />
+                
+                <div class="edit-media-list">
+                  <div v-for="(m, i) in editMedia" :key="m.id" class="edit-media-item">
+                    <select v-model="m.type" class="native-select">
+                      <option value="video">Vídeo</option>
+                      <option value="reference">Referência</option>
+                    </select>
+                    <input type="text" v-model="m.title" placeholder="Título (Opcional)" class="native-input flex-1" />
+                    <input type="text" v-model="m.url" placeholder="URL" class="native-input flex-2" />
+                    <button class="remove-btn" @click="editMedia.splice(i, 1)">×</button>
+                  </div>
+                  <button class="native-button small outline" @click="editMedia.push({ id: `new-${Date.now()}`, type: 'video', url: '' })">
+                    + Adicionar Mídia
+                  </button>
+                </div>
+
+                <div class="edit-notes">
+                  <label>Notas:</label>
+                  <RichTextEditor v-model="editNotes" />
+                </div>
+                
+                <div class="edit-actions">
+                  <button class="native-button" @click="saveEdit">Salvar</button>
+                  <button class="native-button cancel" @click="cancelEdit">Cancelar</button>
+                </div>
               </div>
             </div>
-            <button class="remove-btn" @click.prevent="removeExercise(exercise.id)" title="Remover">×</button>
-          </label>
+          </template>
         </div>
         
         <div v-if="totalNodeDuration > 0" class="duration-total">
@@ -138,12 +244,31 @@ function onHide(): void {
           <h3>➕ Adicionar exercício</h3>
           <div class="add-form">
             <input type="text" v-model="newName" placeholder="Nome do exercício" class="native-input" />
-            <input type="text" v-model="newVideoUrl" placeholder="Link do vídeo (opcional)" class="native-input" />
-            <div class="duration-inputs">
-              <input type="number" v-model="newDurationMin" placeholder="Min" class="native-input input-small" />
-              <span>:</span>
-              <input type="number" v-model="newDurationSec" placeholder="Seg" class="native-input input-small" />
+            
+            <div class="media-inputs">
+              <select v-model="newMediaType" class="native-select">
+                <option value="video">Vídeo</option>
+                <option value="reference">Referência</option>
+              </select>
+              <input type="text" v-model="newMediaUrl" placeholder="URL da mídia (opcional)" class="native-input flex-1" />
             </div>
+            
+            <div class="media-details" v-if="newMediaUrl.trim()">
+              <input type="text" v-model="newMediaTitle" placeholder="Título da mídia (opcional)" class="native-input flex-1" />
+              <div class="duration-inputs" v-if="newMediaType === 'video'">
+                <input type="number" v-model="newDurationMin" placeholder="Min" class="native-input input-small" />
+                <span>:</span>
+                <input type="number" v-model="newDurationSec" placeholder="Seg" class="native-input input-small" />
+              </div>
+            </div>
+
+            <div class="notes-input">
+              <label>Notas adicionais:</label>
+              <RichTextEditor v-model="newNotes" />
+            </div>
+
+            <button class="native-button" @click="addExercise" :disabled="!newName.trim()">Adicionar</button>
+          </div>
             <button class="native-button" @click="addExercise" :disabled="!newName.trim()">Adicionar</button>
           </div>
         </div>
@@ -508,5 +633,134 @@ function onHide(): void {
   margin-bottom: 6px;
   font-size: 0.9rem;
   font-weight: 500;
+}
+
+.exercise-notes-view :deep(ul) { list-style-type: disc; padding-left: 20px; margin: 0 0 0.5em 0; }
+.exercise-notes-view :deep(ol) { list-style-type: decimal; padding-left: 20px; margin: 0 0 0.5em 0; }
+.exercise-notes-view :deep(li) { margin-bottom: 0.2em; }
+.exercise-notes-view :deep(h1) { font-size: 1.5em; font-weight: bold; margin: 0.5em 0; }
+.exercise-notes-view :deep(h2) { font-size: 1.3em; font-weight: bold; margin: 0.5em 0; }
+.exercise-notes-view :deep(h3) { font-size: 1.1em; font-weight: bold; margin: 0.5em 0; }
+.exercise-notes-view :deep(strong) { font-weight: 800; }
+</style>
+
+<style scoped>
+.exercise-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.1rem;
+  opacity: 0.7;
+  padding: 4px;
+}
+.icon-btn:hover {
+  opacity: 1;
+}
+.exercise-notes-view {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border-left: 3px solid #cbd5e1;
+  font-size: 0.9rem;
+  color: #334155;
+  border-radius: 0 4px 4px 0;
+}
+.exercise-notes-view :deep(p) {
+  margin: 0 0 0.5em 0;
+}
+.exercise-notes-view :deep(p:last-child) {
+  margin-bottom: 0;
+}
+.edit-mode {
+  cursor: default;
+  background: #f8fafc;
+  border-color: #3b82f6;
+  box-shadow: 2px 2px 0 #3b82f6;
+}
+.edit-mode:hover {
+  transform: none;
+  box-shadow: 2px 2px 0 #3b82f6;
+}
+.edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+.edit-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+.native-button.cancel {
+  background: #e2e8f0;
+  border-color: #94a3b8;
+  color: #475569;
+}
+.native-button.cancel:hover {
+  background: #cbd5e1;
+}
+.native-select {
+  background: #ffffff;
+  border: 2px solid #000;
+  color: #000;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.media-inputs {
+  display: flex;
+  gap: 8px;
+}
+.media-details {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.flex-1 { flex: 1; }
+.flex-2 { flex: 2; }
+.edit-media-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #fff;
+  padding: 12px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+}
+.edit-media-item {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.small {
+  padding: 6px 12px;
+  font-size: 0.85rem;
+}
+.outline {
+  background: transparent;
+  border: 2px dashed #94a3b8;
+  color: #475569;
+  box-shadow: none;
+}
+.outline:hover {
+  background: #f1f5f9;
+  border-color: #64748b;
+  color: #0f172a;
+}
+.notes-input label, .edit-notes label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: bold;
+  color: #475569;
+  margin-bottom: 4px;
 }
 </style>

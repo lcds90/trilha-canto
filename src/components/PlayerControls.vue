@@ -7,6 +7,7 @@ import { useAuthStore } from '@/stores/auth'
 import StreakPanel from '@/components/StreakPanel.vue'
 import YouTubePlayer from '@/components/YouTubePlayer.vue'
 import DailyAdvice from '@/components/DailyAdvice.vue'
+import RichTextEditor from '@/components/RichTextEditor.vue'
 import gsap from 'gsap'
 import type { VideoMedia } from '@/types'
 
@@ -131,6 +132,7 @@ function extractVideoId(url: string) {
 
 const currentVideoId = computed(() => {
   if (!currentVideo.value?.url) return null
+  if ((currentVideo.value as any).type === 'reference') return null
   return extractVideoId(currentVideo.value.url)
 })
 
@@ -142,9 +144,9 @@ function onPlayerReady(player: any) {
     const duration = Math.round(ytPlayerInstance.getDuration() || 0)
     if (duration > 0 && activeNode.value && activeExercise.value) {
       // update specific video duration
-      const vids = [...(activeExercise.value.videos || [])]
+      const vids = [...((activeExercise.value.media || activeExercise.value.videos) || [])]
       vids[playerStore.activeVideoIndex] = { ...vids[playerStore.activeVideoIndex]!, duration }
-      routineStore.updateExercise(activeNode.value.id, activeExercise.value.id, { videos: vids })
+      routineStore.updateExercise(activeNode.value.id, activeExercise.value.id, activeExercise.value.media ? { media: vids as import('@/types').MediaItem[] } : { videos: vids as import('@/types').VideoMedia[] })
     }
   }
 
@@ -166,7 +168,7 @@ function onPlayerEnded() {
   playerStore.isPlaying = false
   
   // Se for o último vídeo do carrossel (ou único), marca como concluído se não estava
-  const vids = activeExercise.value?.videos || []
+  const vids = activeExercise.value?.media || activeExercise.value?.videos || []
   if (playerStore.activeVideoIndex === vids.length - 1 || vids.length === 0) {
     if (activeNode.value && activeExercise.value && !activeExercise.value.completed) {
       routineStore.toggleExercise(activeNode.value.id, activeExercise.value.id, true)
@@ -183,7 +185,7 @@ function onPlayerEnded() {
 
 function onPlayerNearEnd() {
   // Marca como concluído proximo do fim se for o último vídeo
-  const vids = activeExercise.value?.videos || []
+  const vids = activeExercise.value?.media || activeExercise.value?.videos || []
   if (playerStore.activeVideoIndex === vids.length - 1 || vids.length === 0) {
     if (activeNode.value && activeExercise.value && !activeExercise.value.completed) {
       routineStore.toggleExercise(activeNode.value.id, activeExercise.value.id, true)
@@ -196,15 +198,35 @@ const editNode = computed(() => {
   return routineStore.nodes.find(n => n.id === playerStore.editModeNodeId)
 })
 
-function addVideoToExercise(ex: any) {
-  if (!ex.videos) ex.videos = []
-  ex.videos.push({ url: '' })
+function addMediaToExercise(ex: any) {
+  if (!ex.media) ex.media = []
+  ex.media.push({ id: `media-${Date.now()}`, type: 'video', url: '' })
   routineStore.saveToStorage()
 }
 
-function removeVideoFromExercise(ex: any, vIndex: number) {
-  ex.videos.splice(vIndex, 1)
+function removeMediaFromExercise(ex: any, mIndex: number) {
+  if (!ex.media) return
+  ex.media.splice(mIndex, 1)
   routineStore.saveToStorage()
+}
+
+
+function exitEditMode() {
+  if (editNode.value) {
+    editNode.value.exercises.forEach(ex => {
+      if (ex.media) {
+        ex.media = ex.media.filter(m => m.url.trim() !== '')
+      }
+    })
+    routineStore.saveToStorage()
+  }
+  playerStore.editModeNodeId = null
+}
+
+function confirmReset() {
+  if (confirm('Tem certeza que deseja restaurar os exercícios desta seção para o padrão inicial? Isso apagará todas as edições.')) {
+    routineStore.resetSectionToDefault(playerStore.editModeNodeId!)
+  }
 }
 
 </script>
@@ -256,21 +278,31 @@ function removeVideoFromExercise(ex: any, vIndex: number) {
       <div class="edit-header" v-if="editNode">
         <input class="edit-input section-title-input" v-model="editNode.title" placeholder="Título da Seção" @change="routineStore.saveToStorage()" />
         <div class="edit-actions">
-          <button class="reset-btn" @click="routineStore.resetSectionToDefault(playerStore.editModeNodeId!)" title="Restaurar padrão da trilha">🔄</button>
+          <button class="reset-btn" @click="confirmReset" title="Restaurar padrão da trilha">🔄</button>
           <button class="add-ex-btn" @click="routineStore.addExercise(playerStore.editModeNodeId!, 'Novo Exercício')">+ Novo</button>
-          <button class="close-edit-btn" @click="playerStore.editModeNodeId = null">✖️ Sair</button>
+          <button class="close-edit-btn" @click="exitEditMode">✖️ Sair</button>
         </div>
       </div>
       <div class="edit-list">
         <div v-for="ex in editNode?.exercises" :key="ex.id" class="edit-card">
-          <input class="edit-input" v-model="ex.name" placeholder="Nome do exercício" @change="routineStore.saveToStorage()" />
+          <input class="edit-input font-bold" v-model="ex.name" placeholder="Nome do exercício" @change="routineStore.saveToStorage()" />
           
           <div class="videos-edit-list">
-            <div v-for="(vid, vIdx) in ex.videos" :key="vIdx" class="video-edit-item">
-              <input class="edit-input url-input" v-model="vid.url" placeholder="URL do Vídeo (YouTube)" @change="routineStore.saveToStorage()" />
-              <button class="delete-vid-btn" @click="removeVideoFromExercise(ex, vIdx)" title="Remover vídeo">✖</button>
+            <div v-for="(m, mIdx) in ex.media" :key="m.id" class="video-edit-item">
+              <select v-model="m.type" class="native-select small-select" @change="routineStore.saveToStorage()">
+                <option value="video">Vídeo</option>
+                <option value="reference">Referência</option>
+              </select>
+              <input class="edit-input url-input flex-1" v-model="m.title" placeholder="Título" @change="routineStore.saveToStorage()" />
+              <input class="edit-input url-input flex-2" v-model="m.url" placeholder="URL" @change="routineStore.saveToStorage()" />
+              <button class="delete-vid-btn" @click="removeMediaFromExercise(ex, mIdx)" title="Remover">✖</button>
             </div>
-            <button class="add-vid-btn" @click="addVideoToExercise(ex)">+ Adicionar Vídeo</button>
+            <button class="add-vid-btn" @click="addMediaToExercise(ex)">+ Adicionar Mídia</button>
+          </div>
+
+          <div class="notes-edit-container">
+            <label class="notes-label">Notas:</label>
+            <RichTextEditor v-model="ex.notes" @update:modelValue="routineStore.saveToStorage()" />
           </div>
           
           <button class="delete-btn" @click="routineStore.removeExercise(playerStore.editModeNodeId!, ex.id)" title="Deletar">🗑️</button>
@@ -311,8 +343,8 @@ function removeVideoFromExercise(ex: any, vIndex: number) {
           </div>
           <span class="active-title" >
             {{ activeExercise?.name || 'Selecione um exercício no mapa' }}
-            <span v-if="activeExercise?.videos && activeExercise.videos.length > 1" class="video-counter-text">
-              ({{ playerStore.activeVideoIndex + 1 }}/{{ activeExercise.videos.length }})
+            <span v-if="(activeExercise?.media || activeExercise?.videos) && (activeExercise.media || activeExercise.videos)!.length > 1" class="video-counter-text">
+              ({{ playerStore.activeVideoIndex + 1 }}/{{ (activeExercise.media || activeExercise.videos)!.length }})
             </span>
             <span v-if="activeExercise?.completed" class="floating-check">✅</span>
           </span>
@@ -332,9 +364,17 @@ function removeVideoFromExercise(ex: any, vIndex: number) {
             @ended="onPlayerEnded"
             @nearEnd="onPlayerNearEnd"
           />
-          <div v-else class="text-description">
-            <span class="tip-icon">💡</span>
-            <p>{{ activeExercise.name }}</p>
+          <div v-else class="text-description with-content">
+            <span class="tip-icon" v-if="!activeExercise.notes && (!currentVideo || (currentVideo as any).type !== 'reference')">💡</span>
+            <h3 class="exercise-name-title">{{ activeExercise.name }}</h3>
+            
+            <div v-if="currentVideo && (currentVideo as any).type === 'reference'" class="reference-link">
+              <a :href="currentVideo.url" target="_blank" class="native-button ref-btn">
+                📄 {{ (currentVideo as any).title || 'Abrir Referência' }}
+              </a>
+            </div>
+
+            <div v-if="activeExercise.notes" class="player-notes-view" v-html="activeExercise.notes"></div>
           </div>
         </template>
         <div v-else class="text-description empty">
@@ -362,7 +402,7 @@ function removeVideoFromExercise(ex: any, vIndex: number) {
             >
               {{ playerStore.isPlaying ? '⏸' : '▶' }}
             </button>
-            <button class="icon-btn" @click="(e) => { playerStore.next(); createParticles(e, ['⏭️']) }" :disabled="playerStore.isLastExercise && playerStore.activeVideoIndex === ((activeExercise?.videos?.length || 1) - 1)">⏭</button>
+            <button class="icon-btn" @click="(e) => { playerStore.next(); createParticles(e, ['⏭️']) }" :disabled="playerStore.isLastExercise && playerStore.activeVideoIndex === (((activeExercise?.media || activeExercise?.videos)?.length || 1) - 1)">⏭</button>
           </div>
 
           <label class="auto-toggle" :class="{ 'shake-anim': animatingToggle === 'auto' }">
@@ -1149,4 +1189,73 @@ function removeVideoFromExercise(ex: any, vIndex: number) {
 }
 
 
+
+.player-notes-view :deep(ul) { list-style-type: disc; padding-left: 20px; margin: 0 0 0.5em 0; }
+.player-notes-view :deep(ol) { list-style-type: decimal; padding-left: 20px; margin: 0 0 0.5em 0; }
+.player-notes-view :deep(li) { margin-bottom: 0.2em; }
+.player-notes-view :deep(h1) { font-size: 1.5em; font-weight: bold; margin: 0.5em 0; }
+.player-notes-view :deep(h2) { font-size: 1.3em; font-weight: bold; margin: 0.5em 0; }
+.player-notes-view :deep(h3) { font-size: 1.1em; font-weight: bold; margin: 0.5em 0; }
+.player-notes-view :deep(strong) { font-weight: 800; }
+</style>
+
+<style scoped>
+.font-bold { font-weight: bold; }
+.native-select.small-select {
+  padding: 6px;
+  font-size: 0.8rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+}
+.flex-1 { flex: 1; min-width: 0; }
+.flex-2 { flex: 2; min-width: 0; }
+.notes-edit-container {
+  margin-top: 12px;
+}
+.notes-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: bold;
+  color: #475569;
+  margin-bottom: 4px;
+}
+</style>
+
+<style scoped>
+.with-content {
+  justify-content: flex-start;
+  overflow-y: auto;
+  align-items: flex-start;
+  text-align: left;
+}
+.exercise-name-title {
+  font-size: 1.2rem;
+  margin-bottom: 16px;
+  text-align: center;
+  width: 100%;
+}
+.reference-link {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+.ref-btn {
+  text-decoration: none;
+  display: inline-block;
+}
+.player-notes-view {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 16px;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+.player-notes-view :deep(p) {
+  margin-bottom: 0.5em;
+}
+.player-notes-view :deep(p:last-child) {
+  margin-bottom: 0;
+}
 </style>

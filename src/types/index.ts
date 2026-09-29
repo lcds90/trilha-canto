@@ -3,10 +3,20 @@ export interface VideoMedia {
   duration?: number;
 }
 
+export interface MediaItem {
+  id: string
+  type: 'video' | 'reference'
+  url: string
+  title?: string
+  duration?: number
+}
+
 export interface Exercise {
   id: string              // Gerado com `${nodeId}-${Date.now()}`
   name: string            // Nome do exercício (ex: "Vibração de língua")
-  videos?: VideoMedia[]   // Lista de vídeos (carrossel)
+  notes?: string          // Notas ricas do exercício (HTML)
+  media?: MediaItem[]     // Arquivos de mídia (vídeos ou referências)
+  videos?: VideoMedia[]   // DEPRECATED - migrado para media
   videoUrl?: string       // DEPRECATED - manter por fallback temporário ou migrar
   videoDuration?: number  // DEPRECATED
   completed: boolean      // Se concluído na sessão atual

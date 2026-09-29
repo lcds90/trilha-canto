@@ -40,9 +40,10 @@ App de rotina interativa para guiar a prática diária de canto. O usuário nave
 - A cada seção, uma lista contextual (`.exercise-side-list`) é exibida com os exercícios pertencentes
 
 ### Gestão de Exercícios (Modo de Edição)
-- Acionado via botão ⚙️ diretamente no diagrama
-- Transforma a Sidebar num contexto de edição, substituindo temporariamente o Player
-- Permite Adicionar, Editar (Nome + URL de YouTube) e Excluir exercícios daquela seção
+- Acionado via botão ⚙️ ou pelo botão Editar (✏️) nos modais
+- Permite Adicionar, Editar e Excluir exercícios daquela seção
+- Campos Suportados: Nome, Notas (Rich Text Editor Tiptap) e Lista de Mídias (Vídeos de YouTube com duração calculada ou Referências como links externos/PDFs)
+- Transforma a Sidebar ou abre edição inline no Modal
 - Salvamento automático via Vue Reativity e `localStorage`
 
 ### Sidebar Principal (Player & Status)
