@@ -98,3 +98,6 @@ src/
 ## Plano Futuro (Blaze)
 - Migrar para plano Blaze (custo zero dentro dos limites)
 - Ativar Cloud Storage para upload de vídeos de prática
+
+## Regras de Workflow do Agente (CRITICAL)
+- **ATENÇÃO ANTES DE COMMITAR:** Sempre antes de realizar qualquer `git commit` ou criar pull requests, o agente DEVE revisar e atualizar a documentação presente na pasta `/context` e o arquivo `GEMINI.md`. É responsabilidade do agente garantir que a documentação de arquitetura, estados (stores), componentes e regras esteja sempre sincronizada com o código atual antes de persistir as mudanças no repositório.

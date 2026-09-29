@@ -87,7 +87,6 @@ App de rotina interativa para guiar a prática diária de canto. O usuário nave
 - Responsivo (mobile-first)
 
 ## Estrutura de Arquivos
-```
 src/
 ├── lib/firebase.ts, ai.ts
 ├── types/index.ts
@@ -95,11 +94,13 @@ src/
 ├── composables/useThreeScene.ts
 ├── components/RoadmapScene.vue, ExerciseModal.vue, PlayerControls.vue, StreakPanel.vue
 ├── App.vue, main.ts, router/index.ts
-```
 
 ## Plano Futuro (Blaze)
 - Migrar para plano Blaze (custo zero dentro dos limites)
 - Ativar Cloud Storage para upload de vídeos de prática
 - Adicionar Firestore para persistência e sync entre dispositivos
 - Auth para login do usuário
+
+## Regras de Workflow do Agente (CRITICAL)
+- **ATENÇÃO ANTES DE COMMITAR:** Sempre antes de realizar qualquer `git commit` ou criar pull requests, o agente DEVE revisar e atualizar a documentação presente na pasta `/context` e o arquivo `GEMINI.md`. É responsabilidade do agente garantir que a documentação de arquitetura, estados (stores), componentes e regras esteja sempre sincronizada com o código atual antes de persistir as mudanças no repositório.
 ```
