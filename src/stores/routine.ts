@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { RoadmapNode } from '@/types'
+import type { RoadmapNode, VideoMedia } from '@/types'
 
 const STORAGE_KEY = 'trilha-canto-routine'
 
@@ -11,10 +11,10 @@ const DEFAULT_NODES: RoadmapNode[] = [
     time: 'Tempo flexível',
     color: '#ffe500',
     exercises: [
-      { id: 'resp-1', name: 'Inspiração e expiração livres', completed: false },
-      { id: 'resp-2', name: "Sons de 's' em staccato", completed: false },
-      { id: 'resp-3', name: "Sons de 'f' / 's' / 'x' em staccato", completed: false },
-      { id: 'resp-4', name: 'Inspirar e expirar contando tempo', completed: false },
+      { id: 'resp-1', name: 'Inspiração e expiração livres', videos: [], completed: false },
+      { id: 'resp-2', name: "Sons de 's' em staccato", videos: [], completed: false },
+      { id: 'resp-3', name: "Sons de 'f' / 's' / 'x' em staccato", videos: [], completed: false },
+      { id: 'resp-4', name: 'Inspirar e expirar contando tempo', videos: [], completed: false },
     ],
     completed: false,
   },
@@ -24,9 +24,9 @@ const DEFAULT_NODES: RoadmapNode[] = [
     time: '+/- 15 min',
     color: '#ffe500',
     exercises: [
-      { id: 'corp-1', name: 'Alongamento e articulações', completed: false },
-      { id: 'corp-2', name: 'Massagens na cervical, crânio, face e laringe', completed: false },
-      { id: 'corp-3', name: 'Exercício aviãozinho', completed: false },
+      { id: 'corp-1', name: 'Alongamento e articulações', videos: [], completed: false },
+      { id: 'corp-2', name: 'Massagens na cervical, crânio, face e laringe', videos: [], completed: false },
+      { id: 'corp-3', name: 'Exercício aviãozinho', videos: [], completed: false },
     ],
     completed: false,
   },
@@ -36,9 +36,9 @@ const DEFAULT_NODES: RoadmapNode[] = [
     time: '~ 2 min',
     color: '#ffe500',
     exercises: [
-      { id: 'vocal-1', name: 'Vibração de língua e lábios', completed: false },
-      { id: 'vocal-2', name: 'Estalos de língua', completed: false },
-      { id: 'vocal-3', name: 'Giro de língua', completed: false },
+      { id: 'vocal-1', name: 'Vibração de língua e lábios', videos: [], completed: false },
+      { id: 'vocal-2', name: 'Estalos de língua', videos: [], completed: false },
+      { id: 'vocal-3', name: 'Giro de língua', videos: [], completed: false },
     ],
     completed: false,
   },
@@ -48,10 +48,10 @@ const DEFAULT_NODES: RoadmapNode[] = [
     time: '+/- 20 min',
     color: '#ffe500',
     exercises: [
-      { id: 'voc-1', name: "Aquecimento laríngeo: 'r' vibrado ou 'r-u-m'", completed: false },
-      { id: 'voc-2', name: "Ressonância: 'm', 'moioio...', 'meimaimei'", completed: false },
-      { id: 'voc-3', name: "Abertura e voz na máscara: 'lu...', 'vioviovi'", completed: false },
-      { id: 'voc-4', name: "Apoio muscular: 'ooooirrirrirriooooi', 'irrirrirrirri'", completed: false },
+      { id: 'voc-1', name: "Aquecimento laríngeo: 'r' vibrado ou 'r-u-m'", videos: [], completed: false },
+      { id: 'voc-2', name: "Ressonância: 'm', 'moioio...', 'meimaimei'", videos: [], completed: false },
+      { id: 'voc-3', name: "Abertura e voz na máscara: 'lu...', 'vioviovi'", videos: [], completed: false },
+      { id: 'voc-4', name: "Apoio muscular: 'ooooirrirrirriooooi', 'irrirrirrirri'", videos: [], completed: false },
     ],
     completed: false,
   },
@@ -61,20 +61,30 @@ const DEFAULT_NODES: RoadmapNode[] = [
     time: 'Restante do tempo',
     color: '#ffe500',
     exercises: [
-      { id: 'prat-1', name: 'Aplicar técnica à música trabalhada', completed: false },
-      { id: 'prat-2', name: 'Interpretação e dinâmicas', completed: false },
+      { id: 'prat-1', name: 'Aplicar técnica à música trabalhada', videos: [], completed: false },
+      { id: 'prat-2', name: 'Interpretação e dinâmicas', videos: [], completed: false },
     ],
     completed: false,
   },
 ]
 
 export const useRoutineStore = defineStore('routine', () => {
-  // ============ PERSISTÊNCIA ============
   function loadFromStorage(): RoadmapNode[] {
     try {
       const stored = localStorage.getItem(STORAGE_KEY)
       if (stored) {
-        return JSON.parse(stored)
+        const parsed = JSON.parse(stored) as RoadmapNode[]
+        for (const node of parsed) {
+          for (const ex of node.exercises) {
+            if (!ex.videos) {
+              ex.videos = []
+              if (ex.videoUrl) {
+                ex.videos.push({ url: ex.videoUrl, duration: ex.videoDuration })
+              }
+            }
+          }
+        }
+        return parsed
       }
     } catch (e) {
       console.error('Failed to parse routine from storage', e)
@@ -86,15 +96,15 @@ export const useRoutineStore = defineStore('routine', () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(nodes.value))
   }
 
-  // ============ STATE ============
   const nodes = ref<RoadmapNode[]>(loadFromStorage())
 
-  // ============ GETTERS ============
   const totalDuration = computed<number>(() => {
     let sum = 0
     for (const node of nodes.value) {
       for (const exercise of node.exercises) {
-        if (exercise.videoDuration !== undefined) {
+        if (exercise.videos && exercise.videos.length > 0) {
+          sum += exercise.videos.reduce((acc, v) => acc + (v.duration || 0), 0)
+        } else if (exercise.videoDuration) {
           sum += exercise.videoDuration
         }
       }
@@ -106,22 +116,25 @@ export const useRoutineStore = defineStore('routine', () => {
     return nodes.value.every(n => n.completed)
   })
 
-  // ============ ACTIONS ============
-  function toggleExercise(nodeId: string, exerciseId: string): void {
+  function toggleExercise(nodeId: string, exerciseId: string, forceState?: boolean): void {
     const node = nodes.value.find(n => n.id === nodeId)
     if (!node) return
     const exercise = node.exercises.find(e => e.id === exerciseId)
     if (!exercise) return
-    exercise.completed = !exercise.completed
+    if (forceState !== undefined) {
+      exercise.completed = forceState
+    } else {
+      exercise.completed = !exercise.completed
+    }
     node.completed = node.exercises.every(e => e.completed)
     saveToStorage()
   }
 
-  function addExercise(nodeId: string, name: string, videoUrl?: string, videoDuration?: number): void {
+  function addExercise(nodeId: string, name: string, videos?: VideoMedia[]): void {
     const node = nodes.value.find(n => n.id === nodeId)
     if (!node) return
     const id = `${nodeId}-${Date.now()}`
-    node.exercises.push({ id, name, videoUrl, videoDuration, completed: false })
+    node.exercises.push({ id, name, videos: videos || [], completed: false })
     node.completed = false
     saveToStorage()
   }
@@ -143,6 +156,17 @@ export const useRoutineStore = defineStore('routine', () => {
     saveToStorage()
   }
 
+
+  function resetSectionToDefault(nodeId: string): void {
+    const node = nodes.value.find(n => n.id === nodeId)
+    const defaultNode = DEFAULT_NODES.find(n => n.id === nodeId)
+    if (!node || !defaultNode) return
+    node.title = defaultNode.title
+    node.exercises = JSON.parse(JSON.stringify(defaultNode.exercises))
+    node.completed = false
+    saveToStorage()
+  }
+
   function resetDaily(): void {
     for (const node of nodes.value) {
       node.completed = false
@@ -161,6 +185,7 @@ export const useRoutineStore = defineStore('routine', () => {
     addExercise,
     updateExercise,
     removeExercise,
+    resetSectionToDefault,
     resetDaily,
     saveToStorage,
   }

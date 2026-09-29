@@ -73,7 +73,7 @@ const pathSegments = computed(() => {
     let state = 'default'
     if (nodes.value[i]?.completed) {
       state = 'completed' // Verde se a seção foi concluída
-    } else if (i <= activeIndex.value) {
+    } else if (activeIndex.value !== null && i <= activeIndex.value) {
       state = 'active' // Amarelo se chegou até ela
     }
 
@@ -110,7 +110,7 @@ onMounted(() => {
     })
 
     // Initial camera center
-    centerCamera(activeIndex.value, activeExerciseIndex.value, true)
+    if (activeIndex.value !== null) centerCamera(activeIndex.value, activeExerciseIndex.value || 0, true)
   })
 
   // Handle window resize to re-center
@@ -123,11 +123,11 @@ onUnmounted(() => {
 })
 
 watch([activeIndex, activeExerciseIndex], ([newNode, newEx]) => {
-  centerCamera(newNode, newEx, false)
+  if (newNode !== null) centerCamera(newNode, newEx || 0, false)
 })
 
 const handleResize = () => {
-  centerCamera(activeIndex.value, activeExerciseIndex.value, true)
+  if (activeIndex.value !== null) centerCamera(activeIndex.value, activeExerciseIndex.value || 0, true)
 }
 
 const centerCamera = (nodeIdx: number, exIdx: number, instant = false) => {
@@ -266,10 +266,10 @@ const onNodeClick = (index: number, e: MouseEvent) => {
           <div
             class="exercise-side-list"
             v-if="activeIndex === i"
-            :class="i % 2 === 0 ? 'right-side' : 'left-side'"
+            :class="[i % 2 === 0 ? 'right-side' : 'left-side', { 'completed-list': node.completed }]"
             @click.stop
           >
-            <div class="list-title" :class="{ 'completed-text': node.completed }">
+            <div class="list-title" >
               <button class="edit-btn" @click="playerStore.editModeNodeId = node.id" title="Editar Seção">⚙️</button>
               <span class="list-title-text">{{ node.title }}</span>
               <span class="section-percent">{{ Math.round((node.exercises.filter(e => e.completed).length / node.exercises.length) * 100) || 0 }}%</span>
@@ -437,14 +437,19 @@ const onNodeClick = (index: number, e: MouseEvent) => {
   transform: translateX(-50%);
   margin-top: 12px;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   color: #fff;
   text-align: center;
-  width: 160px;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+  width: max-content;
+  max-width: 180px;
   pointer-events: none;
-  opacity: 0.8;
   transition: color 0.3s ease;
+  background: rgba(8, 8, 22, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 4px 12px;
+  border-radius: 8px;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
 }
 
 .node-content.active .node-title {
@@ -504,6 +509,10 @@ const onNodeClick = (index: number, e: MouseEvent) => {
   transform: translateY(-50%);
 }
 
+.exercise-side-list.completed-list::before {
+  background: rgba(34, 197, 94, 0.8) !important;
+}
+
 .list-title {
   color: #ffe500;
   font-weight: 800;
@@ -539,9 +548,6 @@ const onNodeClick = (index: number, e: MouseEvent) => {
   border-radius: 4px;
 }
 
-.completed-text {
-  color: #22c55e !important;
-}
 
 .floating-check {
   display: inline-block;

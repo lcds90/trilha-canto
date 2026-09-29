@@ -1,8 +1,14 @@
+export interface VideoMedia {
+  url: string;
+  duration?: number;
+}
+
 export interface Exercise {
   id: string              // Gerado com `${nodeId}-${Date.now()}`
   name: string            // Nome do exercício (ex: "Vibração de língua")
-  videoUrl?: string       // URL de vídeo externo (YouTube, etc.)
-  videoDuration?: number  // Duração em SEGUNDOS (ex: 120 = 2min)
+  videos?: VideoMedia[]   // Lista de vídeos (carrossel)
+  videoUrl?: string       // DEPRECATED - manter por fallback temporário ou migrar
+  videoDuration?: number  // DEPRECATED
   completed: boolean      // Se concluído na sessão atual
 }
 

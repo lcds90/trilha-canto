@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, provide } from 'vue'
+import { useRoutineStore } from '@/stores/routine'
 import RoadmapScene from '@/components/RoadmapScene.vue'
 import PlayerControls from '@/components/PlayerControls.vue'
 
@@ -8,6 +9,15 @@ const sidebarPosition = ref<'left' | 'right'>('right')
 const isResizing = ref(false)
 
 onMounted(() => {
+  const routineStore = useRoutineStore()
+  const today = new Date().toISOString().split('T')[0]!
+  const lastActiveDate = localStorage.getItem('trilha-canto-last-active')
+  
+  if (lastActiveDate !== today) {
+    routineStore.resetDaily()
+    localStorage.setItem('trilha-canto-last-active', today)
+  }
+
   const storedWidth = localStorage.getItem('trilha-canto-sidebar-width')
   if (storedWidth) {
     sidebarWidth.value = parseInt(storedWidth, 10)
@@ -42,7 +52,7 @@ function onResize(e: MouseEvent) {
   } else {
     newWidth = e.clientX
   }
-  
+
   if (newWidth > 250 && newWidth < 800) {
     sidebarWidth.value = newWidth
   }
@@ -86,7 +96,7 @@ body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   background-color: #f8fafc;
   color: #0f172a;
-  overflow: hidden; 
+  overflow: hidden;
   -webkit-font-smoothing: antialiased;
 }
 </style>
@@ -115,10 +125,11 @@ body {
   z-index: 20;
   border-left: 2px solid #000;
   border-right: 2px solid #000;
+  transition: background 0.2s ease;
 }
 
 .resizer:hover {
-  background: #ffe500;
+  background: #fff;
 }
 
 .resizer-handle {

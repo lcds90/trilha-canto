@@ -1,10 +1,13 @@
 <script setup lang="ts">
-import { computed, inject, ref } from 'vue'
+import { computed, inject, ref, watch } from 'vue'
 import { usePlayerStore } from '@/stores/player'
 import { useRoutineStore } from '@/stores/routine'
 import { useStreakStore } from '@/stores/streak'
 import StreakPanel from '@/components/StreakPanel.vue'
+import YouTubePlayer from '@/components/YouTubePlayer.vue'
+import DailyAdvice from '@/components/DailyAdvice.vue'
 import gsap from 'gsap'
+import type { VideoMedia } from '@/types'
 
 const playerStore = usePlayerStore()
 const routineStore = useRoutineStore()
@@ -12,8 +15,23 @@ const streakStore = useStreakStore()
 
 const toggleSidebarPosition = inject('toggleSidebarPosition') as () => void
 const isHeaderExpanded = ref(true)
+const hasNewTip = ref(true)
+watch(isHeaderExpanded, (val) => {
+  if (val) hasNewTip.value = false
+})
 
 const animatingToggle = ref<string | null>(null)
+const previousVolume = ref(100)
+
+function toggleMute() {
+  if (playerStore.videoVolume > 0) {
+    previousVolume.value = playerStore.videoVolume
+    playerStore.videoVolume = 0
+  } else {
+    playerStore.videoVolume = previousVolume.value || 100
+  }
+}
+let ytPlayerInstance: any = null
 
 function animateToggle(type: string) {
   animatingToggle.value = type
@@ -24,23 +42,25 @@ function animateToggle(type: string) {
 
 const activeNode = computed(() => playerStore.activeNode)
 const activeExercise = computed(() => playerStore.activeExercise)
+const currentVideo = computed(() => playerStore.currentVideo)
 
 const progressPercent = computed(() => {
+  const total = routineStore.nodes.length
+  if (total === 0) return 0
   const completed = routineStore.nodes.filter(n => n.completed).length
-  return Math.round((completed / routineStore.nodes.length) * 100)
+  return Math.round((completed / total) * 100)
 })
 
 const completedCount = computed(() =>
   routineStore.nodes.filter(n => n.completed).length
 )
 
-function finishSession(): void {
-  const completedIds = routineStore.nodes.filter(n => n.completed).map(n => n.id)
-  streakStore.recordPractice(completedIds, routineStore.totalDuration)
-  routineStore.resetDaily()
-  playerStore.goTo(0)
-  playerStore.isPlaying = false
-}
+watch(() => routineStore.isAllCompleted, (isAllCompleted) => {
+  if (isAllCompleted) {
+    const completedIds = routineStore.nodes.filter(n => n.completed).map(n => n.id)
+    streakStore.recordPractice(completedIds, routineStore.totalDuration)
+  }
+})
 
 function handleCompletedToggle() {
   animateToggle('success')
@@ -49,7 +69,7 @@ function handleCompletedToggle() {
   }
 }
 
-function createParticles(e: MouseEvent, emojis: string[]) {
+function createParticles(e: MouseEvent | { clientX: number, clientY: number }, emojis: string[]) {
   for (let i = 0; i < 4; i++) {
     const el = document.createElement('div')
     el.innerText = emojis[Math.floor(Math.random() * emojis.length)]!
@@ -75,26 +95,115 @@ function createParticles(e: MouseEvent, emojis: string[]) {
 
 function handlePlayClick(e: MouseEvent) {
   playerStore.togglePlay()
-  createParticles(e, ['🎼', '🎵', '🎶', '🎙️', '🎤'])
+  
+  if (playerStore.isPlaying) {
+    createParticles(e, ['🎼', '🎵', '🎶', '🎙️', '🎤'])
+    if (ytPlayerInstance && ytPlayerInstance.playVideo) ytPlayerInstance.playVideo()
+  } else {
+    if (ytPlayerInstance && ytPlayerInstance.pauseVideo) ytPlayerInstance.pauseVideo()
+  }
 }
 
-const embedUrl = computed(() => {
-  const url = activeExercise.value?.videoUrl
-  if (!url) return null
-  if (url.includes('youtube.com/watch?v=')) {
-    const videoId = url.split('v=')[1]?.split('&')[0]
-    return `https://www.youtube.com/embed/${videoId}`
-  } else if (url.includes('youtu.be/')) {
-    const videoId = url.split('youtu.be/')[1]?.split('?')[0]
-    return `https://www.youtube.com/embed/${videoId}`
+// Quando isPlaying muda via global (outro lugar), reflete no player se existir
+watch(() => playerStore.isPlaying, (playing) => {
+  if (ytPlayerInstance) {
+    if (playing) ytPlayerInstance.playVideo?.()
+    else ytPlayerInstance.pauseVideo?.()
   }
-  return url
 })
+
+watch(() => playerStore.videoVolume, (vol) => {
+  if (ytPlayerInstance && ytPlayerInstance.setVolume) {
+    ytPlayerInstance.setVolume(vol)
+  }
+})
+
+function extractVideoId(url: string) {
+  if (url.includes('youtube.com/watch?v=')) {
+    return url.split('v=')[1]?.split('&')[0]
+  } else if (url.includes('youtu.be/')) {
+    return url.split('youtu.be/')[1]?.split('?')[0]
+  }
+  return null
+}
+
+const currentVideoId = computed(() => {
+  if (!currentVideo.value?.url) return null
+  return extractVideoId(currentVideo.value.url)
+})
+
+function onPlayerReady(player: any) {
+  ytPlayerInstance = player
+  ytPlayerInstance.setVolume(playerStore.videoVolume)
+  
+  if (currentVideo.value && !currentVideo.value.duration && ytPlayerInstance.getDuration) {
+    const duration = Math.round(ytPlayerInstance.getDuration() || 0)
+    if (duration > 0 && activeNode.value && activeExercise.value) {
+      // update specific video duration
+      const vids = [...(activeExercise.value.videos || [])]
+      vids[playerStore.activeVideoIndex] = { ...vids[playerStore.activeVideoIndex]!, duration }
+      routineStore.updateExercise(activeNode.value.id, activeExercise.value.id, { videos: vids })
+    }
+  }
+
+  if (playerStore.isPlaying) {
+    ytPlayerInstance.playVideo()
+  }
+}
+
+function onPlayerStateChange(state: number) {
+  // 1 = PLAYING, 2 = PAUSED, 0 = ENDED
+  if (state === 1) {
+    playerStore.isPlaying = true
+  } else if (state === 2) {
+    playerStore.isPlaying = false
+  }
+}
+
+function onPlayerEnded() {
+  playerStore.isPlaying = false
+  
+  // Se for o último vídeo do carrossel (ou único), marca como concluído se não estava
+  const vids = activeExercise.value?.videos || []
+  if (playerStore.activeVideoIndex === vids.length - 1 || vids.length === 0) {
+    if (activeNode.value && activeExercise.value && !activeExercise.value.completed) {
+      routineStore.toggleExercise(activeNode.value.id, activeExercise.value.id, true)
+    }
+  }
+
+  if (playerStore.autoAdvance) {
+    setTimeout(() => {
+      playerStore.next()
+      playerStore.isPlaying = true // autoplay next
+    }, 1500)
+  }
+}
+
+function onPlayerNearEnd() {
+  // Marca como concluído proximo do fim se for o último vídeo
+  const vids = activeExercise.value?.videos || []
+  if (playerStore.activeVideoIndex === vids.length - 1 || vids.length === 0) {
+    if (activeNode.value && activeExercise.value && !activeExercise.value.completed) {
+      routineStore.toggleExercise(activeNode.value.id, activeExercise.value.id, true)
+    }
+  }
+}
 
 const editNode = computed(() => {
   if (!playerStore.editModeNodeId) return null
   return routineStore.nodes.find(n => n.id === playerStore.editModeNodeId)
 })
+
+function addVideoToExercise(ex: any) {
+  if (!ex.videos) ex.videos = []
+  ex.videos.push({ url: '' })
+  routineStore.saveToStorage()
+}
+
+function removeVideoFromExercise(ex: any, vIndex: number) {
+  ex.videos.splice(vIndex, 1)
+  routineStore.saveToStorage()
+}
 
 </script>
 
@@ -104,7 +213,10 @@ const editNode = computed(() => {
     <!-- Collapsible Header -->
     <div class="app-header-collapsible">
       <div class="collapsible-header" :class="{ 'no-pointer': playerStore.editModeNodeId }" @click="!playerStore.editModeNodeId && (isHeaderExpanded = !isHeaderExpanded)">
-        <h2 class="app-title">🎤 Trilha de Canto</h2>
+        <h2 class="app-title">
+          🎤 Trilha de Canto
+          <span v-if="hasNewTip && !isHeaderExpanded" class="new-tip-dot" title="Nova dica de IA disponível!">✨</span>
+        </h2>
         <div class="header-actions" v-if="!playerStore.editModeNodeId">
           <span class="chevron">{{ isHeaderExpanded ? '▲' : '▼' }}</span>
         </div>
@@ -115,15 +227,17 @@ const editNode = computed(() => {
             <button class="toggle-side-btn" @click.stop="toggleSidebarPosition">⇋ Trocar Lado</button>
           </div>
           <StreakPanel />
+          <DailyAdvice />
         </div>
       </Transition>
     </div>
 
     <!-- MODO DE EDIÇÃO -->
     <div v-if="playerStore.editModeNodeId" class="edit-mode-container">
-      <div class="edit-header">
-        <h3>Editar Seção: {{ editNode?.title }}</h3>
+      <div class="edit-header" v-if="editNode">
+        <input class="edit-input section-title-input" v-model="editNode.title" placeholder="Título da Seção" @change="routineStore.saveToStorage()" />
         <div class="edit-actions">
+          <button class="reset-btn" @click="routineStore.resetSectionToDefault(playerStore.editModeNodeId!)" title="Restaurar padrão da trilha">🔄</button>
           <button class="add-ex-btn" @click="routineStore.addExercise(playerStore.editModeNodeId!, 'Novo Exercício')">+ Novo</button>
           <button class="close-edit-btn" @click="playerStore.editModeNodeId = null">✖️ Sair</button>
         </div>
@@ -131,7 +245,15 @@ const editNode = computed(() => {
       <div class="edit-list">
         <div v-for="ex in editNode?.exercises" :key="ex.id" class="edit-card">
           <input class="edit-input" v-model="ex.name" placeholder="Nome do exercício" @change="routineStore.saveToStorage()" />
-          <input class="edit-input url-input" v-model="ex.videoUrl" placeholder="URL do Vídeo (YouTube)" @change="routineStore.saveToStorage()" />
+          
+          <div class="videos-edit-list">
+            <div v-for="(vid, vIdx) in ex.videos" :key="vIdx" class="video-edit-item">
+              <input class="edit-input url-input" v-model="vid.url" placeholder="URL do Vídeo (YouTube)" @change="routineStore.saveToStorage()" />
+              <button class="delete-vid-btn" @click="removeVideoFromExercise(ex, vIdx)" title="Remover vídeo">✖</button>
+            </div>
+            <button class="add-vid-btn" @click="addVideoToExercise(ex)">+ Adicionar Vídeo</button>
+          </div>
+          
           <button class="delete-btn" @click="routineStore.removeExercise(playerStore.editModeNodeId!, ex.id)" title="Deletar">🗑️</button>
         </div>
       </div>
@@ -140,41 +262,57 @@ const editNode = computed(() => {
     <!-- MODO PLAYER NORMAL -->
     <template v-else>
       <div class="sidebar-header">
-        <div class="progress-section compact">
+        <div class="progress-section compact" :class="{ 'is-complete': progressPercent === 100 }">
           <div class="progress-header">
-            <span class="progress-text">Progresso Geral</span>
-            <span class="progress-stats">{{ completedCount }} / {{ routineStore.nodes.length }} seções</span>
+            <template v-if="progressPercent === 100">
+              <span class="progress-text success-text bounce-anim">Sessão concluída 🚀</span>
+            </template>
+            <template v-else>
+              <span class="progress-text">Progresso Geral</span>
+              <span class="progress-stats">{{ completedCount }} / {{ routineStore.nodes.length }} seções</span>
+            </template>
           </div>
           <div class="progress-bar-bg">
-            <div class="progress-bar-fill" :style="{ width: progressPercent + '%' }"></div>
+            <div class="progress-bar-fill" :class="{ 'is-complete': progressPercent === 100 }" :style="{ width: progressPercent + '%' }"></div>
           </div>
         </div>
 
         <hr class="header-divider" />
 
         <div class="active-info">
-          <span class="active-time" :class="{ 'completed-text': activeNode?.completed }">
-            {{ activeNode?.title || 'Trilha' }}
-            <span v-if="activeNode?.completed" class="floating-check">✅</span>
-          </span>
-          <span class="active-title" :class="{ 'completed-text': activeExercise?.completed }">
+          <div class="active-info-top">
+            <span class="active-time" >
+              {{ activeNode?.title || 'Trilha' }}
+              <span v-if="activeNode?.completed" class="floating-check">✅</span>
+            </span>
+            <label class="completion-checkbox custom-tooltip" :data-tooltip="activeExercise.completed ? 'Exercício concluído' : 'Marcar como concluído'" v-if="activeExercise">
+              <input type="checkbox" class="native-checkbox green-checkbox" :checked="activeExercise.completed" @change="handleCompletedToggle" />
+              
+            </label>
+          </div>
+          <span class="active-title" >
             {{ activeExercise?.name || 'Selecione um exercício no mapa' }}
+            <span v-if="activeExercise?.videos && activeExercise.videos.length > 1" class="video-counter-text">
+              ({{ playerStore.activeVideoIndex + 1 }}/{{ activeExercise.videos.length }})
+            </span>
             <span v-if="activeExercise?.completed" class="floating-check">✅</span>
           </span>
         </div>
       </div>
 
-      <!-- Media container com espaço reservado sempre -->
+      <!-- Media container -->
       <section class="media-container" :class="{ 'completed-media': activeExercise?.completed }">
         <template v-if="activeExercise">
-          <iframe
-            v-if="embedUrl"
-            class="video-frame"
-            :src="embedUrl"
-            frameborder="0"
-            allow="autoplay; encrypted-media"
-            allowfullscreen>
-          </iframe>
+          <YouTubePlayer
+            v-if="currentVideoId"
+            :key="currentVideoId"
+            :videoId="currentVideoId"
+            :autoplay="playerStore.isPlaying"
+            @ready="onPlayerReady"
+            @stateChange="onPlayerStateChange"
+            @ended="onPlayerEnded"
+            @nearEnd="onPlayerNearEnd"
+          />
           <div v-else class="text-description">
             <span class="tip-icon">💡</span>
             <p>{{ activeExercise.name }}</p>
@@ -183,13 +321,21 @@ const editNode = computed(() => {
         <div v-else class="text-description empty">
           <p>Aguardando seleção...</p>
         </div>
+        
+
       </section>
 
       <div class="sidebar-body">
-
         <div class="controls-card" :class="{ 'completed-card': activeExercise?.completed }">
+          
+          <!-- Volume Control -->
+          <div class="volume-control" v-if="currentVideoId">
+            <span class="vol-icon" @click="toggleMute" title="Mutar/Desmutar">{{ playerStore.videoVolume === 0 ? '🔇' : '🔉' }}</span>
+            <input type="range" min="0" max="100" v-model.number="playerStore.videoVolume" class="vol-slider" />
+          </div>
+
           <div class="player-controls">
-            <button class="icon-btn" @click="(e) => { playerStore.prev(); createParticles(e, ['⏮️']) }" :disabled="playerStore.isFirstExercise">⏮</button>
+            <button class="icon-btn" @click="(e) => { playerStore.prev(); createParticles(e, ['⏮️']) }" :disabled="playerStore.isFirstExercise && playerStore.activeVideoIndex === 0">⏮</button>
             <button
               class="icon-btn play-btn"
               :class="{ 'completed-play': activeExercise?.completed }"
@@ -197,22 +343,15 @@ const editNode = computed(() => {
             >
               {{ playerStore.isPlaying ? '⏸' : '▶' }}
             </button>
-            <button class="icon-btn" @click="(e) => { playerStore.next(); createParticles(e, ['⏭️']) }" :disabled="playerStore.isLastExercise">⏭</button>
+            <button class="icon-btn" @click="(e) => { playerStore.next(); createParticles(e, ['⏭️']) }" :disabled="playerStore.isLastExercise && playerStore.activeVideoIndex === ((activeExercise?.videos?.length || 1) - 1)">⏭</button>
           </div>
 
-          <div class="toggles">
-            <label class="auto-toggle" :class="{ 'shake-anim': animatingToggle === 'auto' }">
+          <label class="auto-toggle" :class="{ 'shake-anim': animatingToggle === 'auto' }">
               <input type="checkbox" class="native-checkbox neutral-checkbox" v-model="playerStore.autoAdvance" @change="animateToggle('auto')" />
               <span>Avançar automaticamente</span>
             </label>
-            <label class="auto-toggle success-toggle" v-if="activeExercise" :class="{ 'shake-anim': animatingToggle === 'success' }">
-              <input type="checkbox" class="native-checkbox green-checkbox" :checked="activeExercise.completed" @change="handleCompletedToggle" />
-              <span>Marcar como Concluído</span>
-            </label>
-          </div>
         </div>
 
-        <button v-if="routineStore.isAllCompleted" class="finish-btn" @click="finishSession">✅ Concluir Sessão Diária</button>
 
       </div>
     </template>
@@ -226,8 +365,23 @@ const editNode = computed(() => {
   background: #ffffff;
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
+  overflow-y: scroll;
   overflow-x: hidden;
+}
+
+/* Minimalist Scrollbar */
+.player-sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+.player-sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.player-sidebar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+.player-sidebar::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
 .app-header-collapsible {
@@ -267,7 +421,7 @@ const editNode = computed(() => {
 
 .expand-enter-to,
 .expand-leave-from {
-  max-height: 600px;
+  max-height: 1000px;
   opacity: 1;
 }
 
@@ -301,6 +455,38 @@ const editNode = computed(() => {
   background: #f8fafc;
   flex: 1;
   overflow-y: auto;
+}
+
+
+.section-title-input {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #0f172a;
+  padding: 6px 12px;
+  border: 1px dashed #cbd5e1;
+  background: transparent;
+  flex: 1;
+  margin-right: 12px;
+}
+
+.section-title-input:focus {
+  background: #ffffff;
+  border-color: #3b82f6;
+  outline: none;
+}
+
+.reset-btn {
+  background: #e2e8f0;
+  border: none;
+  font-size: 1.1rem;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.reset-btn:hover {
+  background: #cbd5e1;
 }
 
 .edit-header {
@@ -363,6 +549,42 @@ const editNode = computed(() => {
   font-size: 0.85rem;
 }
 
+.videos-edit-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed #cbd5e1;
+}
+
+.video-edit-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.delete-vid-btn {
+  background: none;
+  border: none;
+  color: #ef4444;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.add-vid-btn {
+  background: #e2e8f0;
+  border: none;
+  padding: 6px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  font-weight: bold;
+  color: #334155;
+  align-self: flex-start;
+  margin-top: 4px;
+}
+
 .delete-btn {
   position: absolute;
   top: 12px;
@@ -400,6 +622,18 @@ const editNode = computed(() => {
   transform: scale(1.05);
 }
 
+.new-tip-dot {
+  font-size: 1.2rem;
+  animation: pulse-dot 1.5s infinite;
+  display: inline-block;
+  margin-left: 8px;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.2); opacity: 0.7; }
+}
+
 .app-title {
   font-size: 1.25rem;
   font-weight: 800;
@@ -414,14 +648,13 @@ const editNode = computed(() => {
 }
 
 .collapsible-content {
-    padding: 16px 20px;
-    border-top: 1px solid #e2e8f0;
-    background: #ffffff;
-    display: flex;
-    justify-content: space-around;
-    gap: 24px;
-    flex-direction: row;
-    align-items: center;
+  padding: 16px 20px;
+  border-top: 1px solid #e2e8f0;
+  background: #ffffff;
+  display: flex;
+  gap: 20px;
+  flex-direction: column;
+  align-items: stretch;
 }
 
 .sidebar-header {
@@ -439,6 +672,20 @@ const editNode = computed(() => {
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+
+.active-info-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.completion-checkbox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
 }
 
 .active-time {
@@ -464,9 +711,6 @@ const editNode = computed(() => {
   transition: color 0.3s;
 }
 
-.completed-text {
-  color: #22c55e !important;
-}
 
 .floating-check {
   display: inline-block;
@@ -481,21 +725,17 @@ const editNode = computed(() => {
 .media-container {
   background: #0f172a;
   width: 100%;
-  aspect-ratio: 16 / 9; /* Espaço reservado para não pular */
+  aspect-ratio: 16 / 9; /* Espaço reservado */
   display: flex;
   flex-direction: column;
   justify-content: center;
   border-bottom: 4px solid #ffe500;
   transition: border-color 0.3s;
+  position: relative;
 }
 
 .completed-media {
   border-bottom-color: #22c55e;
-}
-
-.video-frame {
-  width: 100%;
-  height: 100%;
 }
 
 .text-description {
@@ -520,6 +760,58 @@ const editNode = computed(() => {
   font-size: 2rem;
 }
 
+.video-counter-text {
+  font-size: 0.9rem;
+  color: #64748b;
+  font-weight: 700;
+  margin-left: 6px;
+}
+
+.custom-tooltip {
+  position: relative;
+}
+
+.custom-tooltip::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 120%;
+  right: 0;
+  background: #0f172a;
+  color: #f8fafc;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(5px);
+  transition: all 0.2s ease;
+  z-index: 100;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.custom-tooltip::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  right: 6px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: #0f172a transparent transparent transparent;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(5px);
+  transition: all 0.2s ease;
+  z-index: 100;
+}
+
+.custom-tooltip:hover::after,
+.custom-tooltip:hover::before {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 .sidebar-body {
   padding: 24px 20px;
   display: flex;
@@ -534,10 +826,7 @@ const editNode = computed(() => {
   border-radius: 12px;
   padding: 20px;
   display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
   gap: 20px;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
   transition: all 0.3s ease;
@@ -548,13 +837,38 @@ const editNode = computed(() => {
   background: rgba(34, 197, 94, 0.05);
 }
 
+.volume-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.vol-icon {
+  font-size: 1.2rem;
+}
+
+.vol-slider {
+  flex: 1;
+  accent-color: #94a3b8;
+}
+
+.vol-icon {
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.vol-icon:hover {
+  transform: scale(1.1);
+}
+
 .player-controls {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 16px;
-  flex: 1;
-  min-width: 160px;
+  width: 100%;
 }
 
 .icon-btn {
@@ -613,21 +927,11 @@ const editNode = computed(() => {
   box-shadow: 0 2px 0 #16a34a !important;
 }
 
-.toggles {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  background: #f8fafc;
-  padding: 16px;
-  border-radius: 8px;
-  border: 1px dashed #cbd5e1;
-  flex: 1;
-  min-width: 180px;
-}
 
 .auto-toggle {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 10px;
   font-size: 0.9rem;
   color: #334155;
@@ -656,10 +960,6 @@ const editNode = computed(() => {
   animation: pulse-text 1s ease;
 }
 
-.success-toggle {
-  color: #16a34a;
-}
-
 .native-checkbox {
   width: 18px;
   height: 18px;
@@ -673,6 +973,45 @@ const editNode = computed(() => {
 
 .green-checkbox {
   accent-color: #22c55e;
+}
+
+
+.success-text {
+  color: #22c55e !important;
+  font-size: 1rem !important;
+  text-align: center;
+  width: 100%;
+}
+
+.bounce-anim {
+  animation: bounceText 1s infinite;
+}
+
+@keyframes bounceText {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+.progress-bar-fill.is-complete {
+  background: linear-gradient(90deg, #22c55e, #16a34a);
+  animation: pulseBar 1.5s infinite;
+}
+
+@keyframes pulseBar {
+  0% { opacity: 1; }
+  50% { opacity: 0.7; box-shadow: 0 0 10px #22c55e; }
+  100% { opacity: 1; }
+}
+
+.progress-section.is-complete {
+  border-color: #22c55e;
+  background: rgba(34, 197, 94, 0.05);
+  animation: sectionGlow 2s infinite;
+}
+
+@keyframes sectionGlow {
+  0%, 100% { box-shadow: 0 0 5px rgba(34, 197, 94, 0.1); }
+  50% { box-shadow: 0 0 15px rgba(34, 197, 94, 0.3); }
 }
 
 .progress-section {
@@ -718,23 +1057,5 @@ const editNode = computed(() => {
   transition: width 0.5s ease;
 }
 
-.finish-btn {
-  background: #22c55e;
-  color: #ffffff;
-  border: none;
-  padding: 16px;
-  border-radius: 12px;
-  font-weight: 800;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 4px 0 #16a34a;
-  margin-top: auto;
-}
 
-.finish-btn:hover {
-  background: #4ade80;
-  transform: translateY(2px);
-  box-shadow: 0 2px 0 #16a34a;
-}
 </style>

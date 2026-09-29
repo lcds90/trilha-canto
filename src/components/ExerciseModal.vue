@@ -31,7 +31,7 @@ const completedCount = computed(() =>
 )
 
 const totalNodeDuration = computed(() =>
-  node.value.exercises.reduce((sum, e) => sum + (e.videoDuration ?? 0), 0)
+  node.value.exercises.reduce((sum, e) => sum + (e.videos?.reduce((a, b) => a + (b.duration || 0), 0) || e.videoDuration || 0), 0)
 )
 
 function toggleExercise(exerciseId: string): void {
@@ -47,8 +47,7 @@ function addExercise(): void {
   routineStore.addExercise(
     node.value.id,
     newName.value.trim(),
-    newVideoUrl.value.trim() || undefined,
-    totalSeconds > 0 ? totalSeconds : undefined,
+    newVideoUrl.value.trim() ? [{ url: newVideoUrl.value.trim(), duration: totalSeconds > 0 ? totalSeconds : undefined }] : undefined
   )
   
   newName.value = ''
@@ -123,8 +122,8 @@ function onHide(): void {
             <div class="exercise-info">
               <span class="exercise-name">{{ exercise.name }}</span>
               <div class="exercise-meta">
-                <a v-if="exercise.videoUrl" :href="exercise.videoUrl" target="_blank" class="exercise-link" @click.stop>🎬 Ver vídeo</a>
-                <span v-if="exercise.videoDuration" class="exercise-duration">{{ formatDuration(exercise.videoDuration) }}</span>
+                <a v-if="exercise.videos && exercise.videos.length > 0" :href="exercise.videos?.[0]?.url" target="_blank" class="exercise-link" @click.stop>🎬 Ver vídeo</a>
+                <span v-if="exercise.videos && exercise.videos.length > 0 && exercise.videos?.[0]?.duration" class="exercise-duration">{{ formatDuration(exercise.videos?.reduce((a, b) => a + (b.duration || 0), 0) || 0) }}</span>
               </div>
             </div>
             <button class="remove-btn" @click.prevent="removeExercise(exercise.id)" title="Remover">×</button>

@@ -15,11 +15,11 @@ const todayISO = computed(() => new Date().toISOString().split('T')[0])
       <span class="streak-count" :class="{ inactive: streakStore.currentStreak === 0 }">
         {{ streakStore.currentStreak }}
       </span>
-      <span class="streak-label">dias</span>
+      <span class="streak-label">{{ streakStore.currentStreak === 1 ? 'dia' : 'dias' }}</span>
     </div>
 
     <div class="streak-stats">
-      <span class="record">Recorde: {{ streakStore.longestStreak }} dias</span>
+      <span class="record">Recorde: {{ streakStore.longestStreak }} {{ streakStore.longestStreak === 1 ? 'dia' : 'dias' }}</span>
     </div>
 
     <div class="calendar-grid">
