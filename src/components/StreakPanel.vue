@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useStreakStore } from '@/stores/streak'
+import { getLocalDayISO } from '@/lib/date'
 
 const streakStore = useStreakStore()
-const todayISO = computed(() => new Date().toISOString().split('T')[0])
+const todayISO = computed(() => getLocalDayISO())
 </script>
 
 <template>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, provide } from 'vue'
+import { getLocalDayISO } from '@/lib/date'
 import { useRoutineStore } from '@/stores/routine'
 import RoadmapScene from '@/components/RoadmapScene.vue'
 import PlayerControls from '@/components/PlayerControls.vue'
@@ -10,7 +11,7 @@ const isResizing = ref(false)
 
 onMounted(() => {
   const routineStore = useRoutineStore()
-  const today = new Date().toISOString().split('T')[0]!
+  const today = getLocalDayISO()
   const lastActiveDate = localStorage.getItem('trilha-canto-last-active')
   
   if (lastActiveDate !== today) {

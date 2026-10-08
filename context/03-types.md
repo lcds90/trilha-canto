@@ -60,4 +60,4 @@ import type { Exercise, RoadmapNode, DayRecord, AIAnalysis } from '@/types'
 - O alias `@/` aponta para `./src/` (configurado no `tsconfig.app.json` e `vite.config.ts`)
 - `Exercise.videoDuration` é em SEGUNDOS (não minutos). A conversão para "M:SS" é feita na UI
 - `RoadmapNode.completed` é derivado: `exercises.every(e => e.completed)`
-- `DayRecord.date` usa formato ISO sem horário: `new Date().toISOString().split('T')[0]`
+- `DayRecord.date` usa formato ISO sem horário com ajuste de fuso local: `getLocalDayISO()`

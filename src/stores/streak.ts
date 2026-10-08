@@ -3,11 +3,7 @@ import { ref, computed } from 'vue'
 import type { DayRecord } from '@/types'
 
 const STORAGE_KEY = 'trilha-canto-streak'
-
-// ============ HELPERS ============
-function getTodayISO(): string {
-  return new Date().toISOString().split('T')[0]!
-}
+import { getLocalDayISO as getTodayISO, getLocalDayISO } from '@/lib/date'
 
 function getDaysDiff(date1: string, date2: string): number {
   const d1 = new Date(date1).getTime()
@@ -114,7 +110,7 @@ export const useStreakStore = defineStore('streak', () => {
     for (let i = 29; i >= 0; i--) {
       const d = new Date(today)
       d.setDate(today.getDate() - i)
-      const iso = d.toISOString().split('T')[0]!
+      const iso = getLocalDayISO(d)
       const practiced = history.value.some(record => record.date === iso)
       days.push({ date: iso, practiced })
     }

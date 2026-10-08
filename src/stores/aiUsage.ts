@@ -6,10 +6,7 @@ const PER_MINUTE_LIMIT = 10
 const WARNING_PERCENT = 80
 const CRITICAL_PERCENT = 95
 const STORAGE_KEY = 'trilha-canto-ai-usage'
-
-function getTodayISO(): string {
-  return new Date().toISOString().split('T')[0]!
-}
+import { getLocalDayISO as getTodayISO } from '@/lib/date'
 
 export const useAIUsageStore = defineStore('aiUsage', () => {
   const date = ref(getTodayISO())

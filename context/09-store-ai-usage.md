@@ -25,9 +25,7 @@ const WARNING_PERCENT = 80      // Aviso em 80%
 const CRITICAL_PERCENT = 95     // Aviso crítico em 95%
 const STORAGE_KEY = 'trilha-canto-ai-usage'
 
-function getTodayISO(): string {
-  return new Date().toISOString().split('T')[0]!
-}
+import { getLocalDayISO as getTodayISO } from '@/lib/date'
 
 export const useAIUsageStore = defineStore('aiUsage', () => {
 

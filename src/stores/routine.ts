@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import type { RoadmapNode, VideoMedia } from '@/types'
 import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { db, auth } from '@/lib/firebase'
+import { getLocalDayISO } from '@/lib/date'
 
 const STORAGE_KEY = 'trilha-canto-routine'
 
@@ -105,8 +106,16 @@ export const useRoutineStore = defineStore('routine', () => {
     try {
       const snapshot = await getDoc(docRef)
       if (snapshot.exists() && snapshot.data().routine) {
-        nodes.value = snapshot.data().routine
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(nodes.value))
+        const data = snapshot.data()
+        nodes.value = data.routine
+        
+        const today = getLocalDayISO()
+        if (data.lastActiveDate !== today) {
+          // Os dados da nuvem são de um dia anterior, resetamos
+          resetDaily()
+        } else {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(nodes.value))
+        }
       } else {
         await saveToCloud()
       }
@@ -119,7 +128,8 @@ export const useRoutineStore = defineStore('routine', () => {
     if (!auth.currentUser) return
     const docRef = doc(db, 'users', auth.currentUser.uid)
     try {
-      await setDoc(docRef, { routine: nodes.value }, { merge: true })
+      const today = getLocalDayISO()
+      await setDoc(docRef, { routine: nodes.value, lastActiveDate: today }, { merge: true })
     } catch (err) {
       console.error('Failed to save routine to cloud', err)
     }

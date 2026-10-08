@@ -24,7 +24,8 @@ const streakStore = useStreakStore()
 ## Computeds
 
 ```typescript
-const todayISO = computed(() => new Date().toISOString().split('T')[0])
+import { getLocalDayISO } from '@/lib/date'
+const todayISO = computed(() => getLocalDayISO())
 ```
 
 ## Template — Árvore de Elementos

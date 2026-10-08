@@ -31,10 +31,7 @@ const STORAGE_KEY = 'trilha-canto-streak'
 
 // ============ HELPERS ============
 
-function getTodayISO(): string {
-  // Retorna data de hoje como 'YYYY-MM-DD'
-  // return new Date().toISOString().split('T')[0]!
-}
+import { getLocalDayISO as getTodayISO } from '@/lib/date'
 
 function getDaysDiff(date1: string, date2: string): number {
   // Diferença em dias inteiros entre duas datas ISO
