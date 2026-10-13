@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed, inject, ref, watch, onMounted, onUnmounted } from 'vue'
+import { computed, inject, ref, watch, onMounted, onUnmounted, type Ref } from 'vue'
 import { usePlayerStore } from '@/stores/player'
 import { useRoutineStore } from '@/stores/routine'
 import { useStreakStore } from '@/stores/streak'
 import { useAuthStore } from '@/stores/auth'
 import { useMetronomeStore } from '@/stores/metronome'
+import { usePwa } from '@/composables/usePwa'
 import StreakPanel from '@/components/StreakPanel.vue'
 import YouTubePlayer from '@/components/YouTubePlayer.vue'
 import DailyAdvice from '@/components/DailyAdvice.vue'
@@ -19,11 +20,31 @@ const authStore = useAuthStore()
 const metronomeStore = useMetronomeStore()
 
 const toggleSidebarPosition = inject('toggleSidebarPosition') as () => void
-const isHeaderExpanded = ref(true)
+const isMobile = inject<Ref<boolean>>('isMobile', ref(false))
+const sheetState = inject<Ref<'half' | 'full'>>('sheetState', ref('half'))
+// No celular o cabeçalho começa recolhido para priorizar o player
+const isHeaderExpanded = ref(!isMobile.value)
 const hasNewTip = ref(true)
 watch(isHeaderExpanded, (val) => {
   if (val) hasNewTip.value = false
 })
+
+// Ao entrar no modo de edição no celular, expande o bottom sheet
+watch(() => playerStore.editModeNodeId, (id) => {
+  if (id && isMobile.value) sheetState.value = 'full'
+})
+
+// ============ PWA: instalação ============
+const { canInstall, showIOSHint, isInstalled, promptInstall } = usePwa()
+const showIOSInstructions = ref(false)
+async function handleInstallClick() {
+  if (canInstall.value) {
+    await promptInstall()
+  } else if (showIOSHint.value) {
+    showIOSInstructions.value = !showIOSInstructions.value
+    isHeaderExpanded.value = true
+  }
+}
 
 const shortcutsEnabled = ref(localStorage.getItem('trilha-canto-shortcuts') !== 'false')
 watch(shortcutsEnabled, (val) => {
@@ -384,11 +405,35 @@ onUnmounted(() => {
           <span v-if="hasNewTip && !isHeaderExpanded" class="new-tip-dot" title="Nova dica de IA disponível!">✨</span>
         </h2>
         <div class="header-actions" v-if="!playerStore.editModeNodeId">
+          <button
+            v-if="canInstall || showIOSHint"
+            type="button"
+            class="install-chip"
+            @click.stop="handleInstallClick"
+            title="Instalar o app neste dispositivo"
+          >📲 Instalar</button>
           <span class="chevron">{{ isHeaderExpanded ? '▲' : '▼' }}</span>
         </div>
       </div>
       <Transition name="expand">
         <div class="collapsible-content" v-show="isHeaderExpanded && !playerStore.editModeNodeId">
+          <!-- Instalação do app (PWA) -->
+          <div v-if="(canInstall || showIOSHint) && !isInstalled" class="install-card">
+            <div class="install-card-text">
+              <span class="install-card-icon">📲</span>
+              <div>
+                <strong>Instale a Trilha de Canto</strong>
+                <span class="install-card-sub">Acesse direto da tela inicial, em tela cheia e até offline.</span>
+              </div>
+            </div>
+            <button v-if="canInstall" type="button" class="install-btn" @click.stop="promptInstall">Instalar app</button>
+            <button v-else type="button" class="install-btn" @click.stop="showIOSInstructions = !showIOSInstructions">Como instalar</button>
+            <ol v-if="showIOSHint && showIOSInstructions" class="ios-steps">
+              <li>Toque em <strong>Compartilhar</strong> <span aria-hidden="true">⬆️</span> na barra do Safari</li>
+              <li>Escolha <strong>Adicionar à Tela de Início</strong> <span aria-hidden="true">➕</span></li>
+              <li>Confirme em <strong>Adicionar</strong></li>
+            </ol>
+          </div>
           <div class="auth-section">
             <template v-if="authStore.user">
               <div class="auth-user-info">
@@ -407,7 +452,7 @@ onUnmounted(() => {
           </div>
           <div class="side-actions">
             <DailyAdvice />
-            <button class="toggle-side-btn" @click.stop="toggleSidebarPosition">⇋ Trocar Lado</button>
+            <button v-if="!isMobile" class="toggle-side-btn" @click.stop="toggleSidebarPosition">⇋ Trocar Lado</button>
           </div>
           <StreakPanel />
           <div class="shortcuts-info">
@@ -1596,5 +1641,226 @@ kbd {
 }
 .player-notes-view :deep(p:last-child) {
   margin-bottom: 0;
+}
+</style>
+
+<style scoped>
+/* ============ Layout em flex (sidebar / bottom sheet) ============ */
+.player-sidebar {
+  flex: 1;
+  min-height: 0;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ============ PWA: botão e card de instalação ============ */
+.install-chip {
+  background: #0f172a;
+  color: #ffe500;
+  border: 1px solid #0f172a;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform 0.2s, background 0.2s;
+}
+
+.install-chip:hover {
+  background: #1e293b;
+  transform: scale(1.05);
+}
+
+.install-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+  color: #f8fafc;
+  border-radius: 10px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 229, 0, 0.35);
+}
+
+.install-card-text {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.85rem;
+  line-height: 1.35;
+}
+
+.install-card-text strong {
+  display: block;
+  color: #ffe500;
+}
+
+.install-card-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.install-card-sub {
+  display: block;
+  color: #cbd5e1;
+  font-size: 0.78rem;
+}
+
+.install-btn {
+  align-self: flex-start;
+  background: #ffe500;
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-weight: 800;
+  font-size: 0.85rem;
+  cursor: pointer;
+  box-shadow: 0 3px 0 #d4b300;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.install-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #d4b300;
+}
+
+.ios-steps {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 0.8rem;
+  color: #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* ============ Dispositivos de toque: sem atalhos de teclado / hover ============ */
+@media (hover: none) and (pointer: coarse) {
+  .shortcuts-info {
+    display: none;
+  }
+  .drag-handle {
+    display: none; /* HTML5 drag-and-drop não funciona no toque: usa ▲/▼ */
+  }
+  .custom-tooltip::after,
+  .custom-tooltip::before {
+    display: none;
+  }
+}
+
+/* ============ Mobile ============ */
+@media (max-width: 768px) {
+  .collapsible-header {
+    padding: 10px 16px;
+  }
+  .app-title {
+    font-size: 1.05rem;
+  }
+  .collapsible-content {
+    padding: 12px 16px;
+    gap: 14px;
+  }
+  .auth-section {
+    flex-wrap: wrap;
+  }
+  .auth-email {
+    max-width: 180px;
+  }
+  .sidebar-header {
+    padding: 12px 16px 10px;
+  }
+  .header-divider {
+    margin: 10px 0;
+  }
+  .progress-section {
+    padding: 10px 12px;
+  }
+  .active-title {
+    font-size: 1rem;
+    flex-wrap: wrap;
+  }
+  .text-description {
+    padding: 16px;
+    font-size: 0.95rem;
+  }
+  .sidebar-body {
+    padding: 14px 16px 24px;
+    gap: 16px;
+  }
+  .controls-card {
+    padding: 14px;
+    gap: 14px;
+  }
+  .player-controls {
+    gap: 24px;
+  }
+  .icon-btn {
+    width: 48px;
+    height: 48px;
+  }
+  .play-btn {
+    width: 64px;
+    height: 64px;
+  }
+  .native-checkbox {
+    width: 22px;
+    height: 22px;
+  }
+
+  /* Modo de edição */
+  .edit-mode-container {
+    padding: 12px;
+  }
+  .edit-header {
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .section-title-input {
+    flex: 1 1 100%;
+    margin-right: 0;
+  }
+  .edit-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+  .add-ex-btn,
+  .close-edit-btn,
+  .reset-btn {
+    min-height: 40px;
+    padding: 8px 12px;
+  }
+  .edit-card {
+    padding: 12px;
+  }
+  .reorder-btn {
+    min-width: 36px;
+    min-height: 32px;
+    font-size: 0.8rem;
+  }
+  .card-delete-btn {
+    min-width: 40px;
+    min-height: 36px;
+  }
+  .video-edit-item {
+    flex-wrap: wrap;
+    padding-bottom: 8px;
+    border-bottom: 1px dashed #e2e8f0;
+  }
+  .video-edit-item .flex-1 {
+    flex: 1 1 calc(100% - 110px);
+  }
+  .video-edit-item .flex-2 {
+    flex: 1 1 calc(100% - 44px);
+  }
+  .delete-vid-btn {
+    min-width: 36px;
+    min-height: 36px;
+  }
+  .add-vid-btn {
+    padding: 8px 12px;
+  }
 }
 </style>

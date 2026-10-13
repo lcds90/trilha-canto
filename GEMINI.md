@@ -16,6 +16,7 @@ App de rotina interativa para guiar a prática diária de canto. O usuário nave
 - **IA:** Firebase AI Logic + Gemini 2.5 Flash — análise de seções
 - **Persistência:** localStorage (offline) e Firestore (sync cloud via Autenticação Google)
 - **Áudio:** Web Audio API nativo — síntese e agendamento de alta precisão (lookahead scheduler) para metrônomo
+- **PWA e Offline:** vite-plugin-pwa (^2.0) com Workbox para precaching do app shell e suporte a instalação nativa (celular e desktop)
 
 ## Estrutura de Seções (Roadmap)
 
@@ -31,6 +32,21 @@ App de rotina interativa para guiar a prática diária de canto. O usuário nave
    - Aplicar técnicas à música trabalhada, interpretação e dinâmicas
 
 ## Funcionalidades Principais
+
+### Instalação como App (PWA para Celular e Desktop)
+- **Instalação Nativa:**
+  - Suporte completo a Progressive Web App via `vite-plugin-pwa` e manifest web (`manifest.webmanifest`).
+  - Instalável em smartphones (Android e iOS) e computadores (Chrome, Edge, macOS, Windows e Linux).
+  - Ícones adaptativos completos (`64x64`, `192x192`, `512x512`, `maskable-icon-512x512`, `apple-touch-icon-180x180` e `icon.svg`).
+  - Botão e chip de instalação rápida ("📲 Instalar") integrados diretamente no cabeçalho do player e no card expansível, com instruções passo a passo para iOS Safari.
+  - Service worker com precache de assets do app shell e cache runtime para fontes e imagens/thumbnails.
+  - Notificação discreta via toast em `App.vue` para novas versões disponíveis e aviso de prontidão offline.
+
+### Responsividade Móvel e Bottom Sheet
+- **Bottom Sheet Dinâmico (`App.vue`):** Em telas estreitas (≤ 768px), o layout converte-se para vertical e a sidebar vira um bottom sheet deslizante com alça de toque (`.sheet-handle`). Alterna suavemente entre modo meia-tela (`half`, 58vh) e tela cheia (`full`, 100dvh - 110px) via clique ou swipe vertical.
+- **Detecção de Orientação:** Em smartphones em paisagem (landscape), preserva a visualização lado a lado sem distorção.
+- **Modo Compacto do Roadmap (`RoadmapScene.vue`):** Em larguras inferiores a 640px (`ResizeObserver`), os nós reduzem para 60px e são ancorados à esquerda da tela, com a lista lateral de exercícios ancorada à direita aproveitando o espaço restante e com rolagem vertical independente (`touch-action: pan-y`). O HUD do metrônomo adapta-se ao canto superior direito respeitando a safe area.
+- **Adaptação Touch:** Alvos de toque ampliados (48-64px), prevenção de zoom indesejado no iOS Safari com fonte mínima de 16px para inputs e ocultação automática de atalhos de teclado físicos em telas puramente touch.
 
 ### Cena Dinâmica (GSAP + SVG)
 - Nós flutuantes animados com curva Bezier fluida conectando o trajeto
@@ -107,7 +123,7 @@ src/
 ├── lib/firebase.ts, ai.ts
 ├── types/index.ts
 ├── stores/routine.ts, player.ts, streak.ts, aiUsage.ts, auth.ts, metronome.ts
-├── composables/useThreeScene.ts
+├── composables/useThreeScene.ts, usePwa.ts
 ├── components/RoadmapScene.vue, ExerciseModal.vue, PlayerControls.vue, StreakPanel.vue, MetronomeWidget.vue
 ├── App.vue, main.ts, router/index.ts
 ```

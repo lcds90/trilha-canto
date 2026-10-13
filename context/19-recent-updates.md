@@ -73,3 +73,20 @@ Estes logs registram a migração do fluxo original para uma experiência de SPA
 - **Cobertura de Testes E2E:**
   - Testes automatizados Playwright adicionados cobrindo reordenação por botões e via eventos Drag & Drop.
 
+## 10. Responsividade Móvel e PWA (Instalação no Celular e Desktop)
+- **Instalação do App (PWA):**
+  - Configurado `vite-plugin-pwa` no `vite.config.ts` com manifest completo (`id`, `name`, `short_name`, `theme_color: #080816`, `background_color: #080816`, `display: standalone`, `display_override: ['standalone', 'minimal-ui']`).
+  - Geração de ícones PNG para todas as resoluções essenciais (`64x64`, `192x192`, `512x512`, `maskable-icon-512x512` e `apple-touch-icon-180x180`) a partir de `public/icon.svg`.
+  - Service Worker com Workbox ativo em produção: precache dos assets do app shell e runtime caching de Google Fonts e thumbnails com estratégia `StaleWhileRevalidate`.
+  - Composable dedicado `src/composables/usePwa.ts`: singleton que captura o evento `beforeinstallprompt`, detecta modo standalone e iOS (Safari), e provê métodos para disparo de instalação (`promptInstall`), notificação de atualização (`needRefresh`, `applyUpdate`) e uso offline (`offlineReady`).
+  - Botão e chip de instalação ("📲 Instalar") incorporados diretamente no cabeçalho e card interno de `PlayerControls.vue`, além de guia com passo a passo para usuários de iOS ("Compartilhar" -> "Adicionar à Tela de Início").
+  - Toast interativo em `App.vue` notificando quando uma nova versão estiver disponível ou quando o app estiver pronto para uso offline.
+
+- **Responsividade Móvel Fluida (Mobile & Tablet):**
+  - **Bottom Sheet Dinâmico (`App.vue`):** Em telas estreitas (≤ 768px), o layout altera de colunas para disposição vertical. A sidebar é transformada num bottom sheet deslizante com alça tátil (`.sheet-handle`), permitindo alternar suavemente entre visualização compacta (`half`, 58vh) e tela inteira (`full`, 100dvh - 110px) via toque ou swipe vertical.
+  - **Modo Paisagem em Celulares:** Detecta orientação landscape e preserva disposição lado a lado sem espremer o conteúdo.
+  - **Safe Area Insets & 100dvh:** Suporte a entalhes (notches) e barras de navegação do iOS/Android via `env(safe-area-inset-top)` e `env(safe-area-inset-bottom)`.
+  - **Redimensionamento por Toque:** Resizer adaptado com Pointer Events e `setPointerCapture` para funcionar em telas touch e tablets.
+  - **Roadmap Compacto (`RoadmapScene.vue`):** Análise dinâmica de largura via `ResizeObserver`. Em containers estreitos (< 640px), os nós diminuem para 60px e são ancorados à esquerda com curva Bezier otimizada, enquanto a lista contextual de exercícios é ancorada à direita ocupando a largura restante com scroll vertical independente (`touch-action: pan-y`). O floating HUD do metrônomo se reposiciona no canto superior direito respeitando a safe area.
+  - **Otimização Touch em `PlayerControls.vue`:** Áreas de clique ampliadas (48-64px), prevenção de zoom acidental do iOS Safari (base font de 16px para inputs), formulário de edição responsivo com flex-wrap em campos de mídia e quebra fluida, e ocultação automática de atalhos de teclado físicos em dispositivos com ponteiro touch (`pointer: coarse`).
+

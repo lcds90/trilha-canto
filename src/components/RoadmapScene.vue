@@ -21,28 +21,60 @@ const containerRef = ref<HTMLElement | null>(null)
 const wrapperRef = ref<HTMLElement | null>(null)
 const nodeRefs = ref<HTMLElement[]>([])
 
+// Dimensões do container (atualizadas via ResizeObserver)
+const containerWidth = ref(0)
+const containerHeight = ref(0)
+
+// Modo compacto (celulares / containers estreitos): nós ancorados à esquerda e
+// lista de exercícios ocupando a largura restante à direita.
+const COMPACT_BREAKPOINT = 640
+const isCompact = computed(() => containerWidth.value > 0 && containerWidth.value < COMPACT_BREAKPOINT)
+
 // Layout parameters
-const nodeSpacingY = 240 // Maior distância entre seções
-const nodeOffsetX = 60 // Mais reto (menor que 100)
+const nodeSpacingY = computed(() => (isCompact.value ? 200 : 240)) // Maior distância entre seções
+const nodeOffsetX = computed(() => (isCompact.value ? 12 : 60)) // Mais reto (menor que 100)
+const nodeSize = computed(() => (isCompact.value ? 60 : 80))
+const compactAnchorX = 50 // centro horizontal da trilha no modo compacto (px)
+const compactListGap = 12
 
 // Total height of the scrollable roadmap
 const totalHeight = computed(() => {
-  return 100 + (nodes.value.length - 1) * nodeSpacingY + 200
+  return 100 + (nodes.value.length - 1) * nodeSpacingY.value + 200
 })
 
 // Calculate position for a given node index
 const getNodePosition = (index: number) => {
-  const x = (index % 2 === 0) ? -nodeOffsetX : nodeOffsetX
-  const y = 100 + index * nodeSpacingY
+  const x = (index % 2 === 0) ? -nodeOffsetX.value : nodeOffsetX.value
+  const y = 100 + index * nodeSpacingY.value
   return { x, y }
 }
+
+const trackLeft = computed(() => (isCompact.value ? `${compactAnchorX}px` : '50%'))
 
 const getNodeStyle = (index: number) => {
   const { x, y } = getNodePosition(index)
   return {
     transform: `translate(${x}px, ${y}px)`,
-    left: '50%',
+    left: trackLeft.value,
     top: '0',
+  }
+}
+
+// No modo compacto a lista fica sempre à direita, alinhada numa coluna fixa
+const getSideListStyle = (index: number) => {
+  if (!isCompact.value) {
+    if (!containerWidth.value) return undefined
+    return { width: `${Math.max(220, Math.min(350, containerWidth.value / 2 - 90))}px` }
+  }
+  const { x } = getNodePosition(index)
+  const half = nodeSize.value / 2
+  const listStart = compactAnchorX + nodeOffsetX.value + half + compactListGap
+  const positionerOrigin = compactAnchorX + x - half
+  return {
+    left: `${listStart - positionerOrigin}px`,
+    right: 'auto',
+    width: `${Math.max(180, containerWidth.value - listStart - 10)}px`,
+    maxHeight: `${Math.max(160, containerHeight.value - 24)}px`,
   }
 }
 
@@ -94,11 +126,12 @@ const stars = ref(Array.from({ length: 60 }).map(() => ({
 })))
 
 const floatingTweens: gsap.core.Tween[] = []
+let resizeObserver: ResizeObserver | null = null
 
 onMounted(() => {
   // Animate floating nodes with GSAP
   nextTick(() => {
-    nodeRefs.value.forEach((el, i) => {
+    nodeRefs.value.forEach((el) => {
       if (!el) return
       const tween = gsap.to(el, {
         y: '+=15',
@@ -115,17 +148,37 @@ onMounted(() => {
     if (activeIndex.value !== null) centerCamera(activeIndex.value, activeExerciseIndex.value || 0, true)
   })
 
-  // Handle window resize to re-center
-  window.addEventListener('resize', handleResize)
+  // Observa o tamanho do container (janela, sidebar redimensionada, bottom sheet no mobile)
+  if (containerRef.value) {
+    containerWidth.value = containerRef.value.clientWidth
+    containerHeight.value = containerRef.value.clientHeight
+    if (typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(() => {
+        if (!containerRef.value) return
+        containerWidth.value = containerRef.value.clientWidth
+        containerHeight.value = containerRef.value.clientHeight
+        handleResize()
+      })
+      resizeObserver.observe(containerRef.value)
+    } else {
+      window.addEventListener('resize', handleResize)
+    }
+  }
 })
 
 onUnmounted(() => {
   floatingTweens.forEach(t => t.kill())
+  resizeObserver?.disconnect()
   window.removeEventListener('resize', handleResize)
 })
 
 watch([activeIndex, activeExerciseIndex], ([newNode, newEx]) => {
   if (newNode !== null) centerCamera(newNode, newEx || 0, false)
+})
+
+// Ao alternar entre layout normal/compacto, reposiciona a câmera
+watch(isCompact, () => {
+  nextTick(handleResize)
 })
 
 watch(() => metronomeStore.beatTick, () => {
@@ -169,8 +222,9 @@ const handleResize = () => {
 const centerCamera = (nodeIdx: number, exIdx: number, instant = false) => {
   if (!wrapperRef.value || !containerRef.value) return
 
-  const exerciseOffset = exIdx * 25 // 25px offset per exercise
-  const targetY = 100 + nodeIdx * nodeSpacingY + exerciseOffset
+  // No modo compacto a lista fica centralizada no nó, então não desloca por exercício
+  const exerciseOffset = isCompact.value ? 0 : exIdx * 25 // 25px offset per exercise
+  const targetY = 100 + nodeIdx * nodeSpacingY.value + exerciseOffset
   const windowHalfHeight = (containerRef.value.clientHeight || window.innerHeight) / 2
   const scrollY = windowHalfHeight - targetY
 
@@ -245,6 +299,7 @@ const onNodeClick = (index: number, e: MouseEvent) => {
 <template>
   <div
     class="roadmap-container"
+    :class="{ compact: isCompact }"
     ref="containerRef"
     @mousedown="startDrag"
     @mousemove="onDrag"
@@ -296,7 +351,7 @@ const onNodeClick = (index: number, e: MouseEvent) => {
     <div class="nodes-wrapper" ref="wrapperRef" :style="{ height: totalHeight + 'px' }">
 
       <!-- Caminho luminoso -->
-      <svg class="roadmap-path" :viewBox="`-300 0 600 ${totalHeight}`" preserveAspectRatio="xMidYMin slice" :style="{ height: totalHeight + 'px' }">
+      <svg class="roadmap-path" :viewBox="`-300 0 600 ${totalHeight}`" preserveAspectRatio="xMidYMin slice" :style="{ height: totalHeight + 'px', left: trackLeft }">
         <path :d="pathD" stroke="rgba(255, 255, 255, 0.1)" stroke-width="4" fill="none" />
         <path
           v-for="(seg, idx) in pathSegments"
@@ -347,8 +402,10 @@ const onNodeClick = (index: number, e: MouseEvent) => {
           <div
             class="exercise-side-list"
             v-if="activeIndex === i"
-            :class="[i % 2 === 0 ? 'right-side' : 'left-side', { 'completed-list': node.completed }]"
+            :class="[isCompact ? 'right-side' : (i % 2 === 0 ? 'right-side' : 'left-side'), { 'completed-list': node.completed }]"
+            :style="getSideListStyle(i)"
             @click.stop
+            @touchstart.stop
           >
             <div class="list-title" >
               <button class="edit-btn" @click="playerStore.editModeNodeId = node.id" title="Editar Seção">⚙️</button>
@@ -893,5 +950,79 @@ ul {
 .hud-pop-leave-to {
   opacity: 0;
   transform: translateY(-15px) scale(0.9);
+}
+
+/* ============ MODO COMPACTO (celulares / containers estreitos) ============ */
+.compact .node-positioner {
+  margin-left: -30px;
+  margin-top: -30px;
+}
+
+.compact .node-content,
+.compact .metronome-sonar-container,
+.compact .metronome-sonar-wave {
+  width: 60px;
+  height: 60px;
+}
+
+.compact .node-inner {
+  font-size: 18px;
+}
+
+.compact .node-title {
+  font-size: 11px;
+  max-width: 92px;
+  padding: 3px 8px;
+  margin-top: 8px;
+  white-space: normal;
+  line-height: 1.2;
+}
+
+/* O título do nó ativo já aparece no cabeçalho da lista */
+.compact .node-content.active .node-title {
+  display: none;
+}
+
+.compact .exercise-side-list {
+  padding: 12px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* overflow:auto cortaria o conector; no compacto a lista fica colada à trilha */
+.compact .right-side::before {
+  display: none;
+}
+
+.compact .list-title {
+  font-size: 0.85rem;
+  margin-bottom: 8px;
+}
+
+.compact .edit-btn {
+  font-size: 1.25rem;
+  min-width: 32px;
+  min-height: 32px;
+}
+
+.compact .side-ex-item {
+  padding: 9px 8px;
+  font-size: 0.82rem;
+}
+
+.compact .scene-metronome-hud {
+  top: calc(10px + env(safe-area-inset-top));
+  left: auto;
+  right: 10px;
+  padding: 6px 10px 6px 8px;
+  gap: 8px;
+}
+
+@media (hover: none) {
+  .roadmap-container {
+    cursor: default;
+  }
 }
 </style>

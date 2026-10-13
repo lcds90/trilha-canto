@@ -23,13 +23,21 @@ const emit = defineEmits<{
 }>()
 ```
 
-## Stores Usados
+## Stores e Composables Usados
 
 ```typescript
 const playerStore = usePlayerStore()
 const routineStore = useRoutineStore()
 const streakStore = useStreakStore()
+const authStore = useAuthStore()
+const metronomeStore = useMetronomeStore()
+const { canInstall, showIOSHint, isInstalled, promptInstall } = usePwa()
 ```
+
+### Recursos Mobile e PWA
+- **Instalação PWA:** Chip `📲 Instalar` no cabeçalho e card com instruções manuais para iOS dentro das opções expansíveis.
+- **Adaptação Mobile:** O cabeçalho expansível inicia recolhido em celulares (`!isMobile.value`) para dar espaço ao player e exercícios. Ao entrar em modo de edição, expande o bottom sheet para tela cheia.
+- **Touch-Friendly:** Touch targets de 48px a 64px, prevenção de zoom no iOS Safari (inputs com font-size de 16px) e ocultação de atalhos de teclado físicos em dispositivos com ponteiro touch (`pointer: coarse`).
 
 ## Computeds
 

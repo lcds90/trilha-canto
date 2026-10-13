@@ -14,18 +14,18 @@
 ```typescript
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
-import HTML Nativo from 'primevue/config'
-import ToastService from 'primevue/toastservice'
 
 import App from './App.vue'
 import router from './router'
+import { initPwa } from './composables/usePwa'
+
+// Inicializa o PWA o quanto antes para capturar o evento `beforeinstallprompt`
+initPwa()
 
 const app = createApp(App)
 
 app.use(createPinia())
 app.use(router)
-app.use(HTML Nativo, { unstyled: true })   // HTML Nativo sem estilos built-in
-app.use(ToastService)                     // Para notificações de rate limiting
 
 app.mount('#app')
 ```

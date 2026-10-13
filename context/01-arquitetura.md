@@ -17,7 +17,8 @@ App de rotina de prática de canto com roadmap visual 3D animado (Three.js). O u
 | Estado | Pinia (Composition API) | ^4.0 |
 | Backend | Firebase (plano Spark) | ^12.19 |
 | IA | Firebase AI Logic + Gemini 2.5 Flash | via firebase SDK |
-| Persistência | localStorage | — |
+| PWA | vite-plugin-pwa + Workbox | ^2.0 |
+| Persistência | localStorage e Firestore | — |
 
 ## Árvore de Arquivos
 
@@ -36,7 +37,8 @@ src/
 │   ├── auth.ts                  # Autenticação Google
 │   └── metronome.ts             # Síntese Web Audio e ritmo do metrônomo
 ├── composables/
-│   └── useThreeScene.ts         # Setup e animação
+│   ├── useThreeScene.ts         # Setup e animação
+│   └── usePwa.ts                # PWA install prompt, service worker e status
 ├── components/
 │   ├── RoadmapScene.vue         # Canvas / DOM interativo com GSAP
 │   ├── ExerciseModal.vue        # Modal com exercícios + IA
