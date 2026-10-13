@@ -11,10 +11,11 @@ App de rotina interativa para guiar a prática diária de canto. O usuário nave
 - **Build:** Vite (^8.2)
 - **Animações e Câmera:** GSAP (^3.12) — cena 2D/3D simulada usando DOM nativo e SVG paths
 - **UI Components:** Native HTML/CSS
-- **Estado:** Pinia (^4.0) — stores: routine, player, streak, aiUsage, auth
+- **Estado:** Pinia (^4.0) — stores: routine, player, streak, aiUsage, auth, metronome
 - **Backend:** Firebase (plano Spark) — apenas AI Logic
 - **IA:** Firebase AI Logic + Gemini 2.5 Flash — análise de seções
 - **Persistência:** localStorage (offline) e Firestore (sync cloud via Autenticação Google)
+- **Áudio:** Web Audio API nativo — síntese e agendamento de alta precisão (lookahead scheduler) para metrônomo
 
 ## Estrutura de Seções (Roadmap)
 
@@ -51,10 +52,20 @@ App de rotina interativa para guiar a prática diária de canto. O usuário nave
 - **Cabeçalho Expansível:** Contém o título, seção de Autenticação (Login com Google/Avatar) e oculta o painel de "Streak" (Ofensiva), o conselho de IA e os Atalhos de Teclado.
 - **Progresso:** Calcula o avanço geral baseado no total de *exercícios* concluídos, não só seções
 - **Controles:** ⏮, ▶/⏸, ⏭ (Com emissão animada de emojis ao clicar)
-- **Atalhos de Teclado Globais:** Space (Play/Pause), Setas Esquerda/Direita (Voltar/Avançar), C (Concluir), H (Header), E (Modo de Edição), Esc (Sair da edição).
+- **Atalhos de Teclado Globais:** Space (Play/Pause), Setas Esquerda/Direita (Voltar/Avançar), C (Concluir), H (Header), E (Modo de Edição), M (Alternar Metrônomo), Esc (Sair da edição).
 - **Toggles Lado a Lado:** Checkboxes customizados com animações fluidas para "Avançar automaticamente" e "Marcar como Concluído"
 - Espaço dedicado (16:9) para exibir vídeos de YouTube incorporados
 - **Auto-advance:** Avança automaticamente 1.5s após marcar como concluído
+
+### Metrônomo Integrado (Web Audio API)
+- Localizado junto ao Player na sidebar (`MetronomeWidget.vue`), com painel expansível e controle rápido no topo.
+- **Controle de Tempo (BPM):** Ajuste de 30 a 260 BPM com steppers (-5, -1, +1, +5), slider contínuo, indicação de andamento tradicional italiano (Largo, Adagio, Andante, Moderato, Allegro, Presto) e botão de **Tap Tempo** com feedback tátil/visual.
+- **Batidas por Compasso:** Seleção rápida entre 1 (Livre/sem acento), 2/4, 3/4, 4/4, 6/8 ou stepper para 1 a 12 batidas.
+- **Variações de Timbres (5 sons sintetizados):** Madeira (Woodblock), Digital (Beep), Baqueta (Stick), Campana (Cowbell) e Gota Pop (Suave), com preview ao clicar.
+- **Sincronização Visual e no Diagrama:**
+  - Visualizador de batidas com destaque dourado para o tempo forte (acento) e verde nos demais.
+  - No diagrama 3D (`RoadmapScene.vue`): pulsação elástica no nó ativo com GSAP, ondas sonoras de choque (sonar ripples) concêntricas emitidas no ritmo, pulso luminoso dinâmico no trajeto e Floating HUD com mini-pêndulo oscilante, contagem de batidas e botão de parada instantânea.
+- **Persistência e Volume:** Volume ajustável com mute e persistência automática em `localStorage` para BPM, compasso, timbre e volume.
 
 ### Streak (Ofensiva)
 - Dias consecutivos de prática (current + recorde)
@@ -90,9 +101,9 @@ App de rotina interativa para guiar a prática diária de canto. O usuário nave
 src/
 ├── lib/firebase.ts, ai.ts
 ├── types/index.ts
-├── stores/routine.ts, player.ts, streak.ts, aiUsage.ts, auth.ts
+├── stores/routine.ts, player.ts, streak.ts, aiUsage.ts, auth.ts, metronome.ts
 ├── composables/useThreeScene.ts
-├── components/RoadmapScene.vue, ExerciseModal.vue, PlayerControls.vue, StreakPanel.vue
+├── components/RoadmapScene.vue, ExerciseModal.vue, PlayerControls.vue, StreakPanel.vue, MetronomeWidget.vue
 ├── App.vue, main.ts, router/index.ts
 ```
 

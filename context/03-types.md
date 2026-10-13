@@ -46,6 +46,15 @@ export interface AIAnalysis {
   suggestions: string[]   // Lista de sugestões práticas
   timestamp: number       // Date.now() de quando foi gerada
 }
+
+export type MetronomeSoundType = 'woodblock' | 'beep' | 'cowbell' | 'stick' | 'pop'
+
+export interface MetronomeConfig {
+  bpm: number
+  beatsPerMeasure: number
+  soundType: MetronomeSoundType
+  volume: number
+}
 ```
 
 ## Uso
@@ -53,7 +62,7 @@ export interface AIAnalysis {
 Essas interfaces são importadas em todos os módulos do projeto:
 
 ```typescript
-import type { Exercise, RoadmapNode, DayRecord, AIAnalysis } from '@/types'
+import type { Exercise, RoadmapNode, DayRecord, AIAnalysis, MetronomeSoundType, MetronomeConfig } from '@/types'
 ```
 
 ## Notas

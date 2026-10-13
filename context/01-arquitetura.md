@@ -32,14 +32,17 @@ src/
 │   ├── routine.ts               # Estado dos nós e exercícios
 │   ├── player.ts                # Navegação e auto-advance
 │   ├── streak.ts                # Ofensiva e histórico
-│   └── aiUsage.ts               # Rate limiting da IA
+│   ├── aiUsage.ts               # Rate limiting da IA
+│   ├── auth.ts                  # Autenticação Google
+│   └── metronome.ts             # Síntese Web Audio e ritmo do metrônomo
 ├── composables/
-│   └── useThreeScene.ts         # Setup e animação Three.js
+│   └── useThreeScene.ts         # Setup e animação
 ├── components/
-│   ├── RoadmapScene.vue         # Canvas 3D
+│   ├── RoadmapScene.vue         # Canvas / DOM interativo com GSAP
 │   ├── ExerciseModal.vue        # Modal com exercícios + IA
-│   ├── PlayerControls.vue       # Player: play/pause/next/prev
-│   └── StreakPanel.vue          # Ofensiva + calendário 30 dias
+│   ├── PlayerControls.vue       # Player: play/pause/next/prev/shortcuts
+│   ├── StreakPanel.vue          # Ofensiva + calendário 30 dias
+│   └── MetronomeWidget.vue      # Widget de metrônomo integrado
 ├── App.vue                      # Layout principal
 ├── main.ts                      # Entry point
 └── router/index.ts              # Vue Router (vazio)

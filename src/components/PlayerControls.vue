@@ -4,10 +4,12 @@ import { usePlayerStore } from '@/stores/player'
 import { useRoutineStore } from '@/stores/routine'
 import { useStreakStore } from '@/stores/streak'
 import { useAuthStore } from '@/stores/auth'
+import { useMetronomeStore } from '@/stores/metronome'
 import StreakPanel from '@/components/StreakPanel.vue'
 import YouTubePlayer from '@/components/YouTubePlayer.vue'
 import DailyAdvice from '@/components/DailyAdvice.vue'
 import RichTextEditor from '@/components/RichTextEditor.vue'
+import MetronomeWidget from '@/components/MetronomeWidget.vue'
 import gsap from 'gsap'
 import type { VideoMedia } from '@/types'
 
@@ -15,6 +17,7 @@ const playerStore = usePlayerStore()
 const routineStore = useRoutineStore()
 const streakStore = useStreakStore()
 const authStore = useAuthStore()
+const metronomeStore = useMetronomeStore()
 
 const toggleSidebarPosition = inject('toggleSidebarPosition') as () => void
 const isHeaderExpanded = ref(true)
@@ -280,6 +283,10 @@ function handleGlobalKeydown(e: KeyboardEvent) {
         playerStore.editModeNodeId = activeNode.value.id;
       }
       break;
+    case 'm':
+      e.preventDefault();
+      metronomeStore.toggle();
+      break;
   }
 }
 
@@ -345,6 +352,7 @@ onUnmounted(() => {
               <div class="shortcut-item"><kbd>C</kbd> Concluir</div>
               <div class="shortcut-item"><kbd>H</kbd> Header</div>
               <div class="shortcut-item"><kbd>E</kbd> Editar</div>
+              <div class="shortcut-item"><kbd>M</kbd> Metrônomo</div>
               <div class="shortcut-item"><kbd>Esc</kbd> Sair</div>
             </div>
           </div>
@@ -490,7 +498,7 @@ onUnmounted(() => {
             </label>
         </div>
 
-
+        <MetronomeWidget />
       </div>
     </template>
   </div>

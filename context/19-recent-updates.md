@@ -44,3 +44,18 @@ Estes logs registram a migração do fluxo original para uma experiência de SPA
 - Estrutura de dados refinada: `routine` e `streak` agora são salvas diretamente como propriedades no documento raiz do usuário (`users/{uid}`), utilizando `{ merge: true }` para não sobrescrever dados mutuamente.
 - Nova store `auth.ts` foi introduzida para gerenciar o estado da sessão e carregar as rotinas logo após o login.
 - Cabeçalho da barra lateral adaptado para exibir avatar/nome e os controles de login/logout.
+
+## 8. Novo Metrônomo Interativo com Síntese Web Audio e Animações no Diagrama
+- **Metronome Store (`metronome.ts`):** Criada store Pinia com agendador de alta precisão (lookahead scheduler Chris Wilson de 25ms/100ms) eliminando drift e garantindo tempo musical impecável.
+- **5 Timbres Sintetizados:** Bloco de Madeira (`woodblock`), Beep Digital (`beep`), Baqueta (`stick`), Campana (`cowbell`) e Gota Pop (`pop`), sintetizados via osciladores, filtros e ruído da Web Audio API sem necessidade de arquivos externos de áudio.
+- **Controle Flexível de Tempo e Compasso:**
+  - BPM de 30 a 260 com steppers (±1, ±5), slider contínuo, andamento italiano (Largo até Presto) e botão **Tap Tempo**.
+  - Batidas por compasso (1 a 12), com presets 1 (livre), 2/4, 3/4, 4/4 e 6/8, com acento diferenciado na primeira batida.
+  - Persistência das preferências em `localStorage`.
+- **UI Integrada (`MetronomeWidget.vue`):** Inserido junto aos controles do player em `PlayerControls.vue`, com visualizador de batidas, mini-bar superior, painel expansível e controle de volume.
+- **Atalho Global:** Tecla `M` alterna o metrônomo instantaneamente de qualquer lugar da aplicação.
+- **Animação Visual no Diagrama 3D (`RoadmapScene.vue`):**
+  - Pulso físico via GSAP e onda de choque concêntrica (sonar wave) emanando do nó da seção ativa a cada batida, com destaque dourado no tempo forte.
+  - Trajeto iluminado pulsa ritmicamente durante a execução.
+  - Floating HUD no topo da cena 3D exibindo mini-pêndulo oscilante, contagem de batidas, BPM e botão de parada direta.
+

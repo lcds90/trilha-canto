@@ -42,3 +42,12 @@ export interface AIAnalysis {
   suggestions: string[]   // Lista de sugestões práticas
   timestamp: number       // Date.now() de quando foi gerada
 }
+
+export type MetronomeSoundType = 'woodblock' | 'beep' | 'cowbell' | 'stick' | 'pop'
+
+export interface MetronomeConfig {
+  bpm: number
+  beatsPerMeasure: number
+  soundType: MetronomeSoundType
+  volume: number
+}

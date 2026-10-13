@@ -2,14 +2,16 @@
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { usePlayerStore } from '@/stores/player'
 import { useRoutineStore } from '@/stores/routine'
+import { useMetronomeStore } from '@/stores/metronome'
 import gsap from 'gsap'
 
-const emit = defineEmits<{
+defineEmits<{
   openNode: [index: number]
 }>()
 
 const playerStore = usePlayerStore()
 const routineStore = useRoutineStore()
+const metronomeStore = useMetronomeStore()
 
 const activeIndex = computed(() => playerStore.activeNodeIndex)
 const activeExerciseIndex = computed(() => playerStore.activeExerciseIndex)
@@ -126,6 +128,40 @@ watch([activeIndex, activeExerciseIndex], ([newNode, newEx]) => {
   if (newNode !== null) centerCamera(newNode, newEx || 0, false)
 })
 
+watch(() => metronomeStore.beatTick, () => {
+  if (!metronomeStore.isPlaying || activeIndex.value === null) return
+  const activeEl = nodeRefs.value[activeIndex.value]
+  if (activeEl) {
+    const isAcc = metronomeStore.isAccent
+    gsap.fromTo(
+      activeEl,
+      {
+        scale: isAcc ? 1.25 : 1.16,
+        boxShadow: isAcc ? '0 0 35px rgba(255, 229, 0, 0.95)' : '0 0 25px rgba(56, 189, 248, 0.8)'
+      },
+      {
+        scale: 1.1,
+        boxShadow: '0 0 25px rgba(255, 229, 0, 0.5)',
+        duration: Math.min(0.35, 30 / metronomeStore.bpm),
+        ease: 'power2.out'
+      }
+    )
+  }
+})
+
+watch(() => metronomeStore.isPlaying, (playing) => {
+  if (!playing && activeIndex.value !== null) {
+    const activeEl = nodeRefs.value[activeIndex.value]
+    if (activeEl) {
+      gsap.to(activeEl, {
+        scale: 1.1,
+        boxShadow: '0 0 25px rgba(255, 229, 0, 0.5)',
+        duration: 0.3
+      })
+    }
+  }
+})
+
 const handleResize = () => {
   if (activeIndex.value !== null) centerCamera(activeIndex.value, activeExerciseIndex.value || 0, true)
 }
@@ -223,6 +259,39 @@ const onNodeClick = (index: number, e: MouseEvent) => {
       <div v-for="(star, i) in stars" :key="i" class="star" :style="star"></div>
     </div>
 
+    <!-- Floating Metronome HUD na Cena 3D -->
+    <Transition name="hud-pop">
+      <div
+        v-if="metronomeStore.isPlaying"
+        class="scene-metronome-hud"
+        @click.stop="metronomeStore.stop()"
+        title="Metrônomo ativo — Clique para pausar"
+      >
+        <div class="hud-pendulum">
+          <span class="pendulum-needle" :style="{ animationDuration: `${60 / metronomeStore.bpm}s` }"></span>
+        </div>
+        <div class="hud-details">
+          <div class="hud-tempo-row">
+            <span class="hud-bpm-val">{{ metronomeStore.bpm }}</span>
+            <span class="hud-bpm-unit">BPM</span>
+            <span class="hud-meter-badge">{{ metronomeStore.beatsPerMeasure > 1 ? `${metronomeStore.beatsPerMeasure}/4` : '1/1' }}</span>
+          </div>
+          <div class="hud-meter-dots">
+            <span
+              v-for="b in metronomeStore.beatsPerMeasure"
+              :key="b"
+              class="hud-meter-dot"
+              :class="{
+                'is-lit': metronomeStore.currentBeat === b,
+                'is-accent': b === 1 && metronomeStore.beatsPerMeasure > 1
+              }"
+            ></span>
+          </div>
+        </div>
+        <button class="hud-stop-icon" @click.stop="metronomeStore.stop()" title="Parar metrônomo">⏹</button>
+      </div>
+    </Transition>
+
     <!-- Cenário que se move para simular a câmera -->
     <div class="nodes-wrapper" ref="wrapperRef" :style="{ height: totalHeight + 'px' }">
 
@@ -237,7 +306,10 @@ const onNodeClick = (index: number, e: MouseEvent) => {
           stroke-width="6"
           fill="none"
           class="glow-line"
-          :class="{ 'glow-green': seg.state === 'completed' }"
+          :class="{
+            'glow-green': seg.state === 'completed',
+            'metronome-path-pulse': metronomeStore.isPlaying && (seg.state === 'active' || seg.state === 'completed')
+          }"
         />
       </svg>
 
@@ -248,6 +320,15 @@ const onNodeClick = (index: number, e: MouseEvent) => {
         class="node-positioner"
         :style="getNodeStyle(i)"
       >
+        <!-- Ondas sonoras de pulso rítmico do metrônomo -->
+        <div v-if="metronomeStore.isPlaying && i === activeIndex" class="metronome-sonar-container">
+          <div
+            class="metronome-sonar-wave"
+            :key="`beat-${metronomeStore.beatTick}`"
+            :class="{ 'sonar-accent': metronomeStore.isAccent }"
+          ></div>
+        </div>
+
         <div
           class="node-content"
           ref="nodeRefs"
@@ -618,5 +699,199 @@ ul {
 .ex-name {
   flex: 1;
   line-height: 1.2;
+}
+
+/* Metrônomo: Ondas sonoras (Sonar) */
+.metronome-sonar-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 80px;
+  height: 80px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.metronome-sonar-wave {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 2px solid rgba(56, 189, 248, 0.8);
+  box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
+  animation: sonar-wave-anim 0.65s cubic-bezier(0.1, 0.8, 0.25, 1) forwards;
+}
+
+.metronome-sonar-wave.sonar-accent {
+  border-color: #ffe500;
+  border-width: 3px;
+  box-shadow: 0 0 25px rgba(255, 229, 0, 0.85);
+}
+
+@keyframes sonar-wave-anim {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.95;
+  }
+  100% {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+
+/* Metrônomo: Pulsação da linha/caminho */
+.metronome-path-pulse {
+  animation: path-metronome-pulse 1.2s ease-in-out infinite alternate;
+}
+
+@keyframes path-metronome-pulse {
+  0% {
+    stroke-width: 6;
+    filter: drop-shadow(0 0 8px rgba(255, 229, 0, 0.5));
+  }
+  100% {
+    stroke-width: 9;
+    filter: drop-shadow(0 0 22px rgba(255, 229, 0, 0.9));
+  }
+}
+
+/* Metrônomo: Floating Scene HUD */
+.scene-metronome-hud {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  z-index: 25;
+  background: rgba(8, 8, 22, 0.82);
+  border: 1px solid rgba(255, 229, 0, 0.4);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6), 0 0 15px rgba(255, 229, 0, 0.2);
+  backdrop-filter: blur(12px);
+  border-radius: 30px;
+  padding: 8px 16px 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s ease;
+}
+
+.scene-metronome-hud:hover {
+  background: rgba(8, 8, 22, 0.95);
+  border-color: #ffe500;
+  transform: translateY(-2px);
+}
+
+.hud-pendulum {
+  width: 20px;
+  height: 26px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.pendulum-needle {
+  width: 2px;
+  height: 22px;
+  background: #ffe500;
+  border-radius: 2px;
+  transform-origin: top center;
+  animation: pendulum-swing ease-in-out infinite alternate;
+  box-shadow: 0 0 8px #ffe500;
+}
+
+@keyframes pendulum-swing {
+  0% { transform: rotate(-28deg); }
+  100% { transform: rotate(28deg); }
+}
+
+.hud-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.hud-tempo-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.hud-bpm-val {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1;
+}
+
+.hud-bpm-unit {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #ffe500;
+}
+
+.hud-meter-badge {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #94a3b8;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.hud-meter-dots {
+  display: flex;
+  gap: 5px;
+}
+
+.hud-meter-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  transition: all 0.08s ease;
+}
+
+.hud-meter-dot.is-lit {
+  background: #22c55e;
+  box-shadow: 0 0 8px #22c55e;
+  transform: scale(1.3);
+}
+
+.hud-meter-dot.is-lit.is-accent {
+  background: #ffe500;
+  box-shadow: 0 0 10px #ffe500;
+}
+
+.hud-stop-icon {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.hud-stop-icon:hover {
+  background: #ef4444;
+  color: white;
+}
+
+.hud-pop-enter-active,
+.hud-pop-leave-active {
+  transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.hud-pop-enter-from,
+.hud-pop-leave-to {
+  opacity: 0;
+  transform: translateY(-15px) scale(0.9);
 }
 </style>
