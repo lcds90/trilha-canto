@@ -231,3 +231,17 @@ div.player-bar
   }
 }
 ```
+
+## Metrônomo Integrado (`MetronomeWidget.vue`)
+O componente `PlayerControls.vue` inclui diretamente o `<MetronomeWidget />` dentro de `.sidebar-body`, logo após o `.controls-card`.
+- **Atalho Global:** Tecla `M` alterna Play/Pause do metrônomo instantaneamente.
+- **Sincronização:** Opera de forma independente ou em conjunto com a reprodução de mídias e vídeos.
+
+## Modo de Edição e Reordenação de Exercícios
+Ao ativar `playerStore.editModeNodeId` (via tecla `E`, botão ⚙️ na cena ou botões de edição), a sidebar se transforma no painel de edição da seção.
+- **Reordenação Flexível:**
+  - **Drag and Drop Nativo (HTML5):** Alça de arrasto `⋮⋮` com cursor grab/grabbing e classes visuais (`.is-dragging`, `.drop-target-top`, `.drop-target-bottom`).
+  - **Botões Passo a Passo:** Botões de reordenação ▲ e ▼ em cada card, permitindo mover 1 posição por clique (desabilitados no topo e no final da lista).
+  - **Badges de Posição:** Exibição da ordem numérica atual `#1`, `#2`, etc.
+  - **Preservação de Foco:** Se o exercício reordenado for o ativo no player, seu índice é automaticamente atualizado sem interromper a seleção.
+  - **Persistência Imediata:** Salva as alterações instantaneamente no `localStorage` e na nuvem (Firestore).

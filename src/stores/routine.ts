@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { RoadmapNode, VideoMedia } from '@/types'
+import type { RoadmapNode } from '@/types'
 import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { db, auth } from '@/lib/firebase'
 import { getLocalDayISO } from '@/lib/date'
@@ -221,6 +221,28 @@ export const useRoutineStore = defineStore('routine', () => {
     saveToStorage()
   }
 
+  function reorderExercises(nodeId: string, fromIndex: number, toIndex: number): void {
+    const node = nodes.value.find(n => n.id === nodeId)
+    if (!node) return
+    if (fromIndex < 0 || fromIndex >= node.exercises.length) return
+    if (toIndex < 0 || toIndex >= node.exercises.length) return
+    if (fromIndex === toIndex) return
+
+    const [moved] = node.exercises.splice(fromIndex, 1)
+    if (moved) {
+      node.exercises.splice(toIndex, 0, moved)
+      saveToStorage()
+    }
+  }
+
+  function moveExerciseUp(nodeId: string, index: number): void {
+    reorderExercises(nodeId, index, index - 1)
+  }
+
+  function moveExerciseDown(nodeId: string, index: number): void {
+    reorderExercises(nodeId, index, index + 1)
+  }
+
   return {
     nodes,
     totalDuration,
@@ -229,6 +251,9 @@ export const useRoutineStore = defineStore('routine', () => {
     addExercise,
     updateExercise,
     removeExercise,
+    reorderExercises,
+    moveExerciseUp,
+    moveExerciseDown,
     resetSectionToDefault,
     resetDaily,
     saveToStorage,

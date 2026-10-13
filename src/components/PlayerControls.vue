@@ -11,7 +11,6 @@ import DailyAdvice from '@/components/DailyAdvice.vue'
 import RichTextEditor from '@/components/RichTextEditor.vue'
 import MetronomeWidget from '@/components/MetronomeWidget.vue'
 import gsap from 'gsap'
-import type { VideoMedia } from '@/types'
 
 const playerStore = usePlayerStore()
 const routineStore = useRoutineStore()
@@ -237,6 +236,80 @@ function confirmReset() {
   }
 }
 
+// ============ REORDERING & DRAG-AND-DROP ============
+const draggedIndex = ref<number | null>(null)
+const dragOverIndex = ref<number | null>(null)
+const dropPosition = ref<'top' | 'bottom' | null>(null)
+
+function moveExercise(fromIdx: number, toIdx: number) {
+  if (!editNode.value || fromIdx === toIdx) return
+  if (toIdx < 0 || toIdx >= editNode.value.exercises.length) return
+
+  const currentActiveExId = activeExercise.value?.id
+  const nodeId = editNode.value.id
+
+  routineStore.reorderExercises(nodeId, fromIdx, toIdx)
+
+  // Preserva o exercício ativo se o nó editado for o nó selecionado atualmente
+  if (activeNode.value?.id === nodeId && currentActiveExId) {
+    const newIdx = editNode.value.exercises.findIndex(e => e.id === currentActiveExId)
+    if (newIdx !== -1) {
+      playerStore.activeExerciseIndex = newIdx
+    }
+  }
+}
+
+function moveExerciseUp(index: number) {
+  moveExercise(index, index - 1)
+}
+
+function moveExerciseDown(index: number) {
+  moveExercise(index, index + 1)
+}
+
+function handleDragStart(index: number, event: DragEvent) {
+  draggedIndex.value = index
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', index.toString())
+  }
+}
+
+function handleDragOver(index: number, event: DragEvent) {
+  if (draggedIndex.value === null || draggedIndex.value === index) {
+    dragOverIndex.value = null
+    dropPosition.value = null
+    return
+  }
+  const target = (event.currentTarget as HTMLElement)
+  const rect = target.getBoundingClientRect()
+  const midY = rect.top + rect.height / 2
+  dragOverIndex.value = index
+  dropPosition.value = event.clientY < midY ? 'top' : 'bottom'
+}
+
+function handleDragLeave(index: number) {
+  if (dragOverIndex.value === index) {
+    dragOverIndex.value = null
+    dropPosition.value = null
+  }
+}
+
+function handleDrop(targetIndex: number) {
+  if (draggedIndex.value === null || !editNode.value) return
+  const fromIdx = draggedIndex.value
+  const toIdx = Math.max(0, Math.min(editNode.value.exercises.length - 1, targetIndex))
+
+  moveExercise(fromIdx, toIdx)
+  handleDragEnd()
+}
+
+function handleDragEnd() {
+  draggedIndex.value = null
+  dragOverIndex.value = null
+  dropPosition.value = null
+}
+
 function handleGlobalKeydown(e: KeyboardEvent) {
   const target = e.target as HTMLElement;
   if (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable) {
@@ -371,7 +444,55 @@ onUnmounted(() => {
         </div>
       </div>
       <div class="edit-list">
-        <div v-for="ex in editNode?.exercises" :key="ex.id" class="edit-card">
+        <div
+          v-for="(ex, index) in editNode?.exercises"
+          :key="ex.id"
+          class="edit-card"
+          :class="{
+            'is-dragging': draggedIndex === index,
+            'drop-target-top': dragOverIndex === index && dropPosition === 'top',
+            'drop-target-bottom': dragOverIndex === index && dropPosition === 'bottom'
+          }"
+          @dragover.prevent="handleDragOver(index, $event)"
+          @dragleave="handleDragLeave(index)"
+          @drop="handleDrop(index)"
+        >
+          <div class="edit-card-header">
+            <div class="card-reorder-group">
+              <span
+                class="drag-handle"
+                title="Arraste para reordenar"
+                draggable="true"
+                @dragstart="handleDragStart(index, $event)"
+                @dragend="handleDragEnd"
+              >⋮⋮</span>
+              <span class="order-badge">#{{ index + 1 }}</span>
+              <div class="reorder-buttons">
+                <button
+                  type="button"
+                  class="reorder-btn"
+                  :disabled="index === 0"
+                  @click="moveExerciseUp(index)"
+                  title="Mover para cima"
+                >▲</button>
+                <button
+                  type="button"
+                  class="reorder-btn"
+                  :disabled="index === ((editNode?.exercises.length || 1) - 1)"
+                  @click="moveExerciseDown(index)"
+                  title="Mover para baixo"
+                >▼</button>
+              </div>
+            </div>
+            
+            <button
+              type="button"
+              class="card-delete-btn"
+              @click="routineStore.removeExercise(playerStore.editModeNodeId!, ex.id)"
+              title="Deletar exercício"
+            >🗑️</button>
+          </div>
+
           <input class="edit-input font-bold" v-model="ex.name" placeholder="Nome do exercício" @change="routineStore.saveToStorage()" />
           
           <div class="videos-edit-list">
@@ -391,8 +512,6 @@ onUnmounted(() => {
             <label class="notes-label">Notas:</label>
             <RichTextEditor v-model="ex.notes" @update:modelValue="routineStore.saveToStorage()" />
           </div>
-          
-          <button class="delete-btn" @click="routineStore.removeExercise(playerStore.editModeNodeId!, ex.id)" title="Deletar">🗑️</button>
         </div>
       </div>
     </div>
@@ -711,13 +830,122 @@ kbd {
 
 .edit-card {
   background: white;
-  padding: 16px;
+  padding: 14px 16px;
   border-radius: 8px;
   border: 1px solid #cbd5e1;
   display: flex;
   flex-direction: column;
   gap: 12px;
   position: relative;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+}
+
+.edit-card.is-dragging {
+  opacity: 0.4;
+  border: 2px dashed #3b82f6;
+  background: #f8fafc;
+  transform: scale(0.99);
+}
+
+.edit-card.drop-target-top {
+  border-top: 3px solid #3b82f6;
+  box-shadow: 0 -4px 12px rgba(59, 130, 246, 0.2);
+}
+
+.edit-card.drop-target-bottom {
+  border-bottom: 3px solid #3b82f6;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+}
+
+.edit-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 4px;
+}
+
+.card-reorder-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.drag-handle {
+  cursor: grab;
+  user-select: none;
+  font-size: 1.1rem;
+  color: #94a3b8;
+  padding: 2px 4px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  transition: all 0.15s;
+}
+
+.drag-handle:hover {
+  color: #334155;
+  background: #e2e8f0;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+.order-badge {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #475569;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  padding: 2px 6px;
+  letter-spacing: 0.5px;
+}
+
+.reorder-buttons {
+  display: flex;
+  gap: 3px;
+}
+
+.reorder-btn {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  padding: 3px 6px;
+  font-size: 0.65rem;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.15s;
+  line-height: 1;
+}
+
+.reorder-btn:hover:not(:disabled) {
+  background: #e2e8f0;
+  color: #0f172a;
+  border-color: #94a3b8;
+  transform: translateY(-1px);
+}
+
+.reorder-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.card-delete-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.05rem;
+  opacity: 0.6;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.card-delete-btn:hover {
+  opacity: 1;
+  background: #fee2e2;
+  transform: scale(1.1);
 }
 
 .edit-input {
@@ -768,21 +996,6 @@ kbd {
   color: #334155;
   align-self: flex-start;
   margin-top: 4px;
-}
-
-.delete-btn {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 1.1rem;
-  opacity: 0.6;
-}
-
-.delete-btn:hover {
-  opacity: 1;
 }
 
 .toggle-side-btn {

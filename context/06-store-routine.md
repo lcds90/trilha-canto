@@ -172,14 +172,37 @@ export const useRoutineStore = defineStore('routine', () => {
     // 3. saveToStorage()
   }
 
+  function reorderExercises(nodeId: string, fromIndex: number, toIndex: number): void {
+    // 1. const node = nodes.value.find(n => n.id === nodeId)
+    // 2. if (!node || fromIndex < 0 || toIndex < 0 || fromIndex >= node.exercises.length || toIndex >= node.exercises.length) return
+    // 3. const [moved] = node.exercises.splice(fromIndex, 1)
+    // 4. if (moved) node.exercises.splice(toIndex, 0, moved)
+    // 5. saveToStorage()
+  }
+
+  function moveExerciseUp(nodeId: string, index: number): void {
+    // reorderExercises(nodeId, index, index - 1)
+  }
+
+  function moveExerciseDown(nodeId: string, index: number): void {
+    // reorderExercises(nodeId, index, index + 1)
+  }
+
   return {
     nodes,
     totalDuration,
     isAllCompleted,
     toggleExercise,
     addExercise,
+    updateExercise,
     removeExercise,
+    reorderExercises,
+    moveExerciseUp,
+    moveExerciseDown,
+    resetSectionToDefault,
     resetDaily,
+    saveToStorage,
+    syncFromCloud,
   }
 })
 ```

@@ -48,3 +48,76 @@ test('loads app and interacts with metronome and player', async ({ page }) => {
   await hudStopBtn.click()
   await expect(sceneHud).toBeHidden()
 })
+
+test('reorders exercises in section edit mode', async ({ page }) => {
+  await page.goto('/?section=1')
+
+  // Open edit mode via keypress 'e'
+  await page.keyboard.press('e')
+
+  // Check edit mode container is open
+  const editContainer = page.locator('.edit-mode-container')
+  await expect(editContainer).toBeVisible()
+
+  // Get edit cards
+  const cards = editContainer.locator('.edit-card')
+  await expect(cards).toHaveCount(4)
+
+  // Grab the names of first and second exercise inputs
+  const firstInput = cards.nth(0).locator('.edit-input.font-bold')
+  const secondInput = cards.nth(1).locator('.edit-input.font-bold')
+  
+  const firstTitle = await firstInput.inputValue()
+  const secondTitle = await secondInput.inputValue()
+
+  // First card "up" button is disabled
+  const firstUpBtn = cards.nth(0).locator('.reorder-btn', { hasText: '▲' })
+  await expect(firstUpBtn).toBeDisabled()
+
+  // Move first exercise down
+  const firstDownBtn = cards.nth(0).locator('.reorder-btn', { hasText: '▼' })
+  await expect(firstDownBtn).toBeEnabled()
+  await firstDownBtn.click()
+
+  // Now the first card should have the old secondTitle
+  await expect(cards.nth(0).locator('.edit-input.font-bold')).toHaveValue(secondTitle)
+  // And the second card should have the old firstTitle
+  await expect(cards.nth(1).locator('.edit-input.font-bold')).toHaveValue(firstTitle)
+
+  // Move it back up
+  const newSecondUpBtn = cards.nth(1).locator('.reorder-btn', { hasText: '▲' })
+  await newSecondUpBtn.click()
+
+  // Restored
+  await expect(cards.nth(0).locator('.edit-input.font-bold')).toHaveValue(firstTitle)
+  await expect(cards.nth(1).locator('.edit-input.font-bold')).toHaveValue(secondTitle)
+
+  // Exit edit mode
+  await page.keyboard.press('Escape')
+  await expect(editContainer).toBeHidden()
+})
+
+test('reorders exercises via drag and drop', async ({ page }) => {
+  await page.goto('/?section=1&isEdit=true')
+
+  const editContainer = page.locator('.edit-mode-container')
+  await expect(editContainer).toBeVisible()
+
+  const cards = editContainer.locator('.edit-card')
+  await expect(cards).toHaveCount(4)
+
+  const firstTitle = await cards.nth(0).locator('.edit-input.font-bold').inputValue()
+  const secondTitle = await cards.nth(1).locator('.edit-input.font-bold').inputValue()
+
+  // Dispatch HTML5 DragEvent from first handle to second card
+  await cards.nth(0).locator('.drag-handle').dispatchEvent('dragstart')
+  await cards.nth(1).dispatchEvent('dragover')
+  await cards.nth(1).dispatchEvent('drop')
+  await cards.nth(0).locator('.drag-handle').dispatchEvent('dragend')
+
+  // Check new order
+  await expect(cards.nth(0).locator('.edit-input.font-bold')).toHaveValue(secondTitle)
+  await expect(cards.nth(1).locator('.edit-input.font-bold')).toHaveValue(firstTitle)
+})
+
+

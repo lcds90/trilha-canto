@@ -59,3 +59,17 @@ Estes logs registram a migração do fluxo original para uma experiência de SPA
   - Trajeto iluminado pulsa ritmicamente durante a execução.
   - Floating HUD no topo da cena 3D exibindo mini-pêndulo oscilante, contagem de batidas, BPM e botão de parada direta.
 
+## 9. Reordenação de Exercícios no Modo de Edição
+- **Reordenação Flexível por Drag and Drop e Botões:**
+  - Adicionado suporte a arrastar e soltar (HTML5 Drag & Drop) diretamente na alça de pegada `⋮⋮` (`.drag-handle`) com cursor `grab`/`grabbing` e feedback visual nos cards durante o arraste (`.is-dragging`, `.drop-target-top`, `.drop-target-bottom`).
+  - Botões dedicados de passo a passo (▲ e ▼) em cada card de exercício para reordenação com 1 clique (com estado desabilitado inteligente no topo e na base).
+  - Badge numérico `#1`, `#2`, etc. identificando a posição ordinal de cada exercício.
+- **Store `routine.ts`:**
+  - Implementadas as ações `reorderExercises(nodeId, fromIndex, toIndex)`, `moveExerciseUp(nodeId, index)` e `moveExerciseDown(nodeId, index)` com validações de limites e salvamento automático.
+- **Preservação de Contexto do Player:**
+  - Quando a seção sendo editada é a seção ativa no player, a reordenação rastreia o `id` do exercício atualmente selecionado e atualiza `activeExerciseIndex` para acompanhar a nova posição, evitando que a reprodução ou seleção mude inesperadamente.
+- **Suporte no `ExerciseModal.vue`:**
+  - Adicionados botões ▲ e ▼ com suporte a reordenar exercícios diretamente no modal de detalhes.
+- **Cobertura de Testes E2E:**
+  - Testes automatizados Playwright adicionados cobrindo reordenação por botões e via eventos Drag & Drop.
+

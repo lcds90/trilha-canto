@@ -80,6 +80,12 @@ function addExercise(): void
 function removeExercise(exerciseId: string): void
   // routineStore.removeExercise(node.value.id, exerciseId)
 
+function moveExerciseUp(index: number): void
+  // routineStore.moveExerciseUp(node.value.id, index)
+
+function moveExerciseDown(index: number): void
+  // routineStore.moveExerciseDown(node.value.id, index)
+
 async function analyzeWithAI(): Promise<void>
   // 1. Se !aiUsageStore.canCall:
   //    - Se isBlocked → aiError = 'Limite diário atingido. Tente amanhã.'

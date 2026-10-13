@@ -118,6 +118,14 @@ function removeExercise(exerciseId: string): void {
   routineStore.removeExercise(node.value.id, exerciseId)
 }
 
+function moveExerciseUp(index: number): void {
+  routineStore.moveExerciseUp(node.value.id, index)
+}
+
+function moveExerciseDown(index: number): void {
+  routineStore.moveExerciseDown(node.value.id, index)
+}
+
 async function analyzeWithAI(): Promise<void> {
   if (!aiUsageStore.canCall) {
     if (aiUsageStore.isBlocked) {
@@ -165,7 +173,7 @@ function onHide(): void {
         <div class="modal-progress">{{ completedCount }} / {{ node.exercises.length }} exercícios concluídos</div>
         
         <div class="exercise-list">
-          <template v-for="exercise in node.exercises" :key="exercise.id">
+          <template v-for="(exercise, index) in node.exercises" :key="exercise.id">
             <!-- Modo de Visualização -->
             <label 
               v-if="editingId !== exercise.id"
@@ -197,6 +205,8 @@ function onHide(): void {
                 <div v-if="exercise.notes" class="exercise-notes-view" v-html="exercise.notes"></div>
               </div>
               <div class="exercise-actions">
+                <button class="icon-btn reorder-btn" :disabled="index === 0" @click.prevent="moveExerciseUp(index)" title="Mover para cima">▲</button>
+                <button class="icon-btn reorder-btn" :disabled="index === node.exercises.length - 1" @click.prevent="moveExerciseDown(index)" title="Mover para baixo">▼</button>
                 <button class="icon-btn" @click.prevent="startEdit(exercise)" title="Editar">✏️</button>
                 <button class="remove-btn" @click.prevent="removeExercise(exercise.id)" title="Remover">×</button>
               </div>
@@ -267,8 +277,6 @@ function onHide(): void {
               <RichTextEditor v-model="newNotes" />
             </div>
 
-            <button class="native-button" @click="addExercise" :disabled="!newName.trim()">Adicionar</button>
-          </div>
             <button class="native-button" @click="addExercise" :disabled="!newName.trim()">Adicionar</button>
           </div>
         </div>
@@ -660,6 +668,17 @@ function onHide(): void {
 }
 .icon-btn:hover {
   opacity: 1;
+}
+.icon-btn.reorder-btn {
+  font-size: 0.75rem;
+  padding: 2px 6px;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  background: #f8fafc;
+}
+.icon-btn.reorder-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
 }
 .exercise-notes-view {
   margin-top: 8px;
