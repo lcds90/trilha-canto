@@ -1,19 +1,29 @@
 import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
 import type { MetronomeSoundType } from '@/types'
+import { useVoiceCoach } from '@/composables/useVoiceCoach'
 
 export const useMetronomeStore = defineStore('metronome', () => {
+  const voiceCoach = useVoiceCoach()
+
   // ============ PERSISTENCE KEYS ============
   const STORAGE_KEY_BPM = 'trilha-canto-metronome-bpm'
   const STORAGE_KEY_BEATS = 'trilha-canto-metronome-beats'
   const STORAGE_KEY_SOUND = 'trilha-canto-metronome-sound'
   const STORAGE_KEY_VOLUME = 'trilha-canto-metronome-volume'
+  const STORAGE_KEY_TIMER_DURATION = 'trilha-canto-metronome-timer-duration'
+  const STORAGE_KEY_TIMER_SYNC = 'trilha-canto-metronome-timer-sync'
 
   // ============ INITIAL STATE ============
   const initialBpm = Math.min(260, Math.max(30, parseInt(localStorage.getItem(STORAGE_KEY_BPM) || '100', 10)))
   const initialBeats = Math.min(12, Math.max(1, parseInt(localStorage.getItem(STORAGE_KEY_BEATS) || '4', 10)))
   const initialSound = (localStorage.getItem(STORAGE_KEY_SOUND) as MetronomeSoundType) || 'woodblock'
   const initialVolume = Math.min(100, Math.max(0, parseInt(localStorage.getItem(STORAGE_KEY_VOLUME) || '80', 10)))
+  
+  // Default timer duration is 120s (2 minutes), 0 means "Livre / Sem limite"
+  const rawTimerDuration = parseInt(localStorage.getItem(STORAGE_KEY_TIMER_DURATION) || '120', 10)
+  const initialTimerDuration = isNaN(rawTimerDuration) ? 120 : rawTimerDuration
+  const initialTimerSync = localStorage.getItem(STORAGE_KEY_TIMER_SYNC) !== 'false'
 
   // ============ STATE ============
   const isPlaying = ref(false)
@@ -26,6 +36,16 @@ export const useMetronomeStore = defineStore('metronome', () => {
 
   const currentBeat = ref(1) // 1 to beatsPerMeasure
   const beatTick = ref(0) // increments on every beat to trigger animations
+
+  // ============ TIMER STATE ============
+  const timerDuration = ref<number>(initialTimerDuration) // in seconds, 0 = infinite
+  const timerRemaining = ref<number>(initialTimerDuration > 0 ? initialTimerDuration : 0)
+  const isTimerRunning = ref<boolean>(false)
+  const syncWithMetronome = ref<boolean>(initialTimerSync)
+  const timerPresets = [30, 60, 120, 180, 300, 0] // 30s, 1m, 2m, 3m, 5m, Livre (0)
+
+  let timerIntervalId: number | null = null
+  let onFinishListeners: Array<() => void> = []
 
   // ============ GETTERS ============
   const isAccent = computed(() => beatsPerMeasure.value > 1 && currentBeat.value === 1)
@@ -40,6 +60,28 @@ export const useMetronomeStore = defineStore('metronome', () => {
     if (val <= 156) return 'Allegro'
     if (val <= 176) return 'Vivace'
     return 'Presto'
+  })
+
+  const timerRemainingFormatted = computed(() => {
+    if (timerDuration.value === 0) return '∞ Livre'
+    const mins = Math.floor(timerRemaining.value / 60)
+    const secs = timerRemaining.value % 60
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+  })
+
+  const timerDurationFormatted = computed(() => {
+    if (timerDuration.value === 0) return 'Livre'
+    const mins = Math.floor(timerDuration.value / 60)
+    const secs = timerDuration.value % 60
+    if (mins > 0 && secs === 0) return `${mins}m`
+    if (mins === 0) return `${secs}s`
+    return `${mins}m ${secs}s`
+  })
+
+  const timerProgress = computed(() => {
+    if (timerDuration.value <= 0) return 0
+    const elapsed = timerDuration.value - timerRemaining.value
+    return Math.min(100, Math.max(0, Math.round((elapsed / timerDuration.value) * 100)))
   })
 
   // ============ AUDIO ENGINE ============
@@ -253,8 +295,8 @@ export const useMetronomeStore = defineStore('metronome', () => {
     }
   }
 
-  // ============ ACTIONS ============
-  function start() {
+  // ============ METRONOME ACTIONS ============
+  function startMetronomeAudio() {
     if (isPlaying.value) return
     const ctx = getAudioContext()
     currentBeatIndex = 0
@@ -266,7 +308,7 @@ export const useMetronomeStore = defineStore('metronome', () => {
     schedulerTimer = window.setInterval(scheduler, LOOKAHEAD_MS)
   }
 
-  function stop() {
+  function stopMetronomeAudio() {
     isPlaying.value = false
     if (schedulerTimer) {
       clearInterval(schedulerTimer)
@@ -278,6 +320,21 @@ export const useMetronomeStore = defineStore('metronome', () => {
     }
   }
 
+  function start() {
+    startMetronomeAudio()
+    // Se o timer estiver configurado com duração > 0 e sincronizado, aciona o timer também
+    if (syncWithMetronome.value && timerDuration.value > 0 && !isTimerRunning.value) {
+      startTimer(false) // false para evitar loop
+    }
+  }
+
+  function stop() {
+    stopMetronomeAudio()
+    if (syncWithMetronome.value && isTimerRunning.value) {
+      pauseTimer(false)
+    }
+  }
+
   function toggle() {
     if (isPlaying.value) {
       stop()
@@ -286,6 +343,107 @@ export const useMetronomeStore = defineStore('metronome', () => {
     }
   }
 
+  // ============ TIMER ACTIONS ============
+  function onTimerFinish(fn: () => void) {
+    onFinishListeners.push(fn)
+  }
+
+  function removeTimerFinishListener(fn: () => void) {
+    onFinishListeners = onFinishListeners.filter(l => l !== fn)
+  }
+
+  function finishTimer() {
+    pauseTimer(false)
+    stopMetronomeAudio()
+    
+    // Anuncia "Finalizado" com voz
+    voiceCoach.speak('Finalizado')
+
+    // Dispara listeners (conclusão do exercício e auto-avanço)
+    for (const listener of onFinishListeners) {
+      try {
+        listener()
+      } catch (err) {
+        console.error('[metronomeStore] Error in timer finish listener:', err)
+      }
+    }
+  }
+
+  function startTimer(shouldStartMetronome: boolean = true) {
+    if (isTimerRunning.value) return
+
+    // Se o timer atingiu 0 ou está livre, reseta para a duração inicial
+    if (timerRemaining.value <= 0 && timerDuration.value > 0) {
+      timerRemaining.value = timerDuration.value
+    }
+
+    isTimerRunning.value = true
+
+    // Anuncia "Iniciando" com voz
+    voiceCoach.speak('Iniciando')
+
+    // Se sincronizado, inicia o áudio do metrônomo
+    if (syncWithMetronome.value && shouldStartMetronome && !isPlaying.value) {
+      startMetronomeAudio()
+    }
+
+    // Se a duração for 0 (modo livre), não roda countdown de parada
+    if (timerDuration.value === 0) return
+
+    if (timerIntervalId) clearInterval(timerIntervalId)
+    timerIntervalId = window.setInterval(() => {
+      if (timerRemaining.value > 1) {
+        timerRemaining.value--
+      } else {
+        timerRemaining.value = 0
+        finishTimer()
+      }
+    }, 1000)
+  }
+
+  function pauseTimer(shouldStopMetronome: boolean = true) {
+    isTimerRunning.value = false
+    if (timerIntervalId) {
+      clearInterval(timerIntervalId)
+      timerIntervalId = null
+    }
+    if (shouldStopMetronome && syncWithMetronome.value && isPlaying.value) {
+      stopMetronomeAudio()
+    }
+  }
+
+  function toggleTimer() {
+    if (isTimerRunning.value) {
+      pauseTimer()
+    } else {
+      startTimer()
+    }
+  }
+
+  function resetTimer() {
+    pauseTimer()
+    timerRemaining.value = timerDuration.value > 0 ? timerDuration.value : 0
+  }
+
+  function setTimerDuration(seconds: number) {
+    const val = Math.max(0, Math.min(3600, Math.round(seconds)))
+    timerDuration.value = val
+    timerRemaining.value = val
+    localStorage.setItem(STORAGE_KEY_TIMER_DURATION, val.toString())
+  }
+
+  function adjustTimer(deltaSeconds: number) {
+    const current = timerDuration.value > 0 ? timerDuration.value : 60
+    const newVal = Math.max(15, current + deltaSeconds)
+    setTimerDuration(newVal)
+  }
+
+  function setSyncWithMetronome(val: boolean) {
+    syncWithMetronome.value = val
+    localStorage.setItem(STORAGE_KEY_TIMER_SYNC, val.toString())
+  }
+
+  // ============ METRONOME SETTERS ============
   function setBpm(val: number) {
     const clamped = Math.min(260, Math.max(30, Math.round(val)))
     bpm.value = clamped
@@ -348,7 +506,7 @@ export const useMetronomeStore = defineStore('metronome', () => {
   watch(volume, (v) => localStorage.setItem(STORAGE_KEY_VOLUME, v.toString()))
 
   return {
-    // State
+    // Metronome State
     isPlaying,
     bpm,
     beatsPerMeasure,
@@ -356,10 +514,19 @@ export const useMetronomeStore = defineStore('metronome', () => {
     volume,
     currentBeat,
     beatTick,
+    // Timer State
+    timerDuration,
+    timerRemaining,
+    isTimerRunning,
+    syncWithMetronome,
+    timerPresets,
     // Getters
     isAccent,
     tempoMarking,
-    // Actions
+    timerRemainingFormatted,
+    timerDurationFormatted,
+    timerProgress,
+    // Metronome Actions
     start,
     stop,
     toggle,
@@ -369,6 +536,17 @@ export const useMetronomeStore = defineStore('metronome', () => {
     setSoundType,
     setVolume,
     previewSound,
-    tapTempo
+    tapTempo,
+    // Timer Actions
+    startTimer,
+    pauseTimer,
+    toggleTimer,
+    resetTimer,
+    setTimerDuration,
+    adjustTimer,
+    setSyncWithMetronome,
+    onTimerFinish,
+    removeTimerFinishListener,
+    finishTimer
   }
 })

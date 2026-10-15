@@ -79,40 +79,42 @@ function finishSession(): void {
 }
 ```
 
-## Template — Árvore de Elementos
+## Template — Árvore de Elementos (Layout Minimalista)
 
 ```
-div.player-bar
+div.player-sidebar
 │
-├── div.progress-section
-│   ├── div.progress-bar-bg
-│   │   └── div.progress-bar-fill (:style="{ width: progressPercent + '%' }")
-│   └── span.progress-text → "{{ completedCount }}/{{ routineStore.nodes.length }} seções"
+├── div.app-header-collapsible (Cabeçalho colapsável: Perfil, PWA, Streak, Atalhos)
 │
-├── div.player-controls
-│   ├── Button @click="playerStore.prev()" :disabled="playerStore.isFirstNode"
-│   │   → "⏮"
-│   │
-│   ├── Button @click="playerStore.togglePlay()" class="play-btn"
-│   │   → "{{ playerStore.isPlaying ? '⏸' : '▶' }}"
-│   │
-│   ├── Button @click="playerStore.next()" :disabled="playerStore.isLastNode"
-│   │   → "⏭"
-│   │
-│   └── label.auto-toggle
-│       ├── input[type="checkbox"] v-model="playerStore.autoAdvance"
-│       └── span → "Auto"
+├── div.edit-mode-container (v-if="playerStore.editModeNodeId" - Edição & Drag-and-Drop)
 │
-├── div.active-info (@click="emit('openNode', playerStore.activeNodeIndex)")
-│   ├── span.active-title → "{{ activeNode.title }}"
-│   └── span.active-time → "{{ activeNode.time }}"
-│
-├── span.duration-display (v-if="totalDurationFormatted")
-│   → "⏱️ {{ totalDurationFormatted }}"
-│
-└── Button.finish-btn (v-if="routineStore.isAllCompleted")
-    @click="finishSession"
-    → "✅ Concluir Sessão"
+└── template (v-else - Modo Player Normal)
+    │
+    ├── div.sidebar-header
+    │   ├── div.minimal-progress-row (Seção ativa + progresso em seções)
+    │   ├── div.slim-progress-track (Barra de progresso ultrafina de 4px)
+    │   └── div.exercise-headline (Título do exercício + contador de mídia)
+    │
+    ├── section.media-container (Vídeo 16:9 ou Notas/Referências)
+    │
+    └── div.sidebar-body
+        │
+        ├── MetronomeWidget (METRÔNOMO E TEMPORIZADOR UNIFICADOS EM 1 CARD - ACIMA DO PLAYER)
+        │   └── div.unified-card (Card Único: Metrônomo à esquerda, Temporizador à direita, Play unificado)
+        │
+        └── div.minimal-player-card (PLAYER MINIMALISTA)
+            ├── div.playback-main-row (Controles Principais)
+            │   ├── button.nav-btn.prev-btn (⏮ Voltar)
+            │   ├── button.primary-play-btn (▶/⏸ Play/Pause)
+            │   ├── button.nav-btn.next-btn (⏭ Avançar)
+            │   └── button.complete-toggle-pill (CHECKBOX DE COMPLETAR AULA: JUNTO DO PLAYER)
+            │       ├── span.pill-check-box (Ícone SVG Check)
+            │       └── span.pill-label ("Concluir" / "Concluído")
+            │
+            └── div.playback-sub-row (Controles Secundários)
+                ├── div.minimal-volume-group (Slider de volume quando houver vídeo)
+                ├── label.auto-advance-label (Toggle "Auto-avançar")
+                └── button.voice-coach-chip (Ativa/desativa voz "Iniciando" e "Finalizado")
 ```
 
 ## CSS

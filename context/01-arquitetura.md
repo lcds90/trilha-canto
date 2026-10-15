@@ -38,7 +38,8 @@ src/
 │   └── metronome.ts             # Síntese Web Audio e ritmo do metrônomo
 ├── composables/
 │   ├── useThreeScene.ts         # Setup e animação
-│   └── usePwa.ts                # PWA install prompt, service worker e status
+│   ├── usePwa.ts                # PWA install prompt, service worker e status
+│   └── useVoiceCoach.ts         # Síntese vocal Web Speech API (Iniciando / Finalizado)
 ├── components/
 │   ├── RoadmapScene.vue         # Canvas / DOM interativo com GSAP
 │   ├── ExerciseModal.vue        # Modal com exercícios + IA

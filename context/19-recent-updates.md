@@ -90,3 +90,25 @@ Estes logs registram a migração do fluxo original para uma experiência de SPA
   - **Roadmap Compacto (`RoadmapScene.vue`):** Análise dinâmica de largura via `ResizeObserver`. Em containers estreitos (< 640px), os nós diminuem para 60px e são ancorados à esquerda com curva Bezier otimizada, enquanto a lista contextual de exercícios é ancorada à direita ocupando a largura restante com scroll vertical independente (`touch-action: pan-y`). O floating HUD do metrônomo se reposiciona no canto superior direito respeitando a safe area.
   - **Otimização Touch em `PlayerControls.vue`:** Áreas de clique ampliadas (48-64px), prevenção de zoom acidental do iOS Safari (base font de 16px para inputs), formulário de edição responsivo com flex-wrap em campos de mídia e quebra fluida, e ocultação automática de atalhos de teclado físicos em dispositivos com ponteiro touch (`pointer: coarse`).
 
+## 11. Player Minimalista, Checkbox Junto ao Player, Metrônomo + Temporizador Lado a Lado e Voice Coach
+- **Checkbox de Concluir Aula Integrado ao Player:**
+  - O checkbox de conclusão do exercício ativo foi reposicionado diretamente para a barra de transporte de áudio/vídeo (`.playback-main-row`), ficando alinhado lado a lado com os botões ⏮ (Voltar), ▶/⏸ (Play/Pause) e ⏭ (Avançar).
+  - Feedback visual imediato com caixa de marcação personalizada, transição para verde esmeralda (`#22c55e`), ícone SVG de checkmark e rótulo dinâmico "Concluir" / "Concluído".
+  - Totalmente compatível com o atalho de teclado global `C`.
+- **Temporizador de Prática (Metrônomo por X Tempo):**
+  - Adicionado suporte a contagem regressiva para prática vocal com metrônomo.
+  - Presets rápidos de 30s, 1m, 2m, 3m, 5m ou modo livre (∞), e botões de passo de ±15s.
+  - Ao término do tempo configurado, o metrônomo para automaticamente, marca o exercício como concluído e avança para o próximo exercício na rotina.
+- **Voice Coach (Voz Sintetizada Web Speech API):**
+  - Criação do composable `src/composables/useVoiceCoach.ts` com suporte à voz em Português do Brasil (`pt-BR`).
+  - Anuncia verbalmente `"Iniciando"` ao disparar o temporizador, metrônomo ou vídeo de treino.
+  - Anuncia verbalmente `"Finalizado"` ao término do temporizador de prática ou quando o vídeo do YouTube chega ao fim.
+  - Botão de toggle rápido (`🎙️ Voz On / 🔇 Voz Off`) na barra secundária do player com persistência local.
+- **Módulo Unificado de Prática (Acima do Player):**
+  - `MetronomeWidget.vue` foi unificado em **1 único card minimalista** contendo tanto o Metrônomo quanto o Temporizador com um botão mestre de reprodução conjunta (`Iniciar` / `Parar`).
+  - Painel dividido internamente: à esquerda o Metrônomo (BPM, Tap Tempo, slider e beat dots); à direita o Temporizador (display digital MM:SS, steppers ±15s, chips de presets 30s-5m-∞ e barra de progresso suave).
+  - Gaveta retrátil para opções avançadas de áudio, timbres, compasso e volume.
+- **Refatoração Minimalista Completa do Player:**
+  - Remoção de bordas pesadas e sombras skeuomórficas 3D em favor de uma estética moderna, limpa e plana.
+  - Barra de progresso ultrafina no topo do cabeçalho da seção.
+  - Linha secundária discreta com controle de volume, checkbox de auto-avanço e controle de voz.

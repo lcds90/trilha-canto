@@ -68,25 +68,36 @@ App de rotina interativa para guiar a prática diária de canto. O usuário nave
 - Transforma a Sidebar ou abre edição inline no Modal
 - Salvamento automático via Vue Reactivity e `localStorage` (com sincronização em nuvem no Firestore se logado)
 
-### Sidebar Principal (Player & Status)
+### Sidebar Principal (Player Minimalista & Status)
 - Disposição responsiva que pode ser redimensionada e trocada de lado (Esquerda/Direita)
-- **Cabeçalho Expansível:** Contém o título, seção de Autenticação (Login com Google/Avatar) e oculta o painel de "Streak" (Ofensiva), o conselho de IA e os Atalhos de Teclado.
-- **Progresso:** Calcula o avanço geral baseado no total de *exercícios* concluídos, não só seções
-- **Controles:** ⏮, ▶/⏸, ⏭ (Com emissão animada de emojis ao clicar)
-- **Atalhos de Teclado Globais:** Space (Play/Pause), Setas Esquerda/Direita (Voltar/Avançar), C (Concluir), H (Header), E (Modo de Edição), M (Alternar Metrônomo), Esc (Sair da edição).
-- **Toggles Lado a Lado:** Checkboxes customizados com animações fluidas para "Avançar automaticamente" e "Marcar como Concluído"
-- Espaço dedicado (16:9) para exibir vídeos de YouTube incorporados
-- **Auto-advance:** Avança automaticamente 1.5s após marcar como concluído
+- **Cabeçalho Minimalista:** Exibe o título da seção, estatísticas compactas de progresso e barra de progresso ultrafina. Mantém cabeçalho colapsável no topo com Autenticação, instalação PWA, Streak e Atalhos.
+- **Mídia 16:9:** Área dedicada para vídeos do YouTube e visualização limpa de notas/referências.
+- **Módulo Unificado de Prática (Acima do Player):** Metrônomo e Temporizador integrados em um único card (`MetronomeWidget.vue`) logo acima dos controles de reprodução.
+- **Controles de Reprodução Minimalistas:**
+  - Linha principal unificada:⏮, ▶/⏸, ⏭ e **Checkbox de Conclusão de Aula** lado a lado (`.complete-toggle-pill`).
+  - **Checkbox Junto ao Player:** O usuário marca ou desmarca a conclusão do exercício diretamente na barra de transporte com um clique ou via atalho `C`.
+  - Linha secundária compacta: Slider discreto de volume, toggle de "Avançar automaticamente" e botão do **Voice Coach** (`🎙️ Voz On/Off`).
+- **Atalhos de Teclado Globais:** Space (Play/Pause), Setas Esquerda/Direita (Voltar/Avançar), C (Concluir), M (Metrônomo), T (Timer), H (Header), E (Modo de Edição), Esc (Sair).
+- **Auto-advance:** Avança automaticamente para o próximo exercício ao concluir (via timer ou checkbox).
 
-### Metrônomo Integrado (Web Audio API)
-- Localizado junto ao Player na sidebar (`MetronomeWidget.vue`), com painel expansível e controle rápido no topo.
-- **Controle de Tempo (BPM):** Ajuste de 30 a 260 BPM com steppers (-5, -1, +1, +5), slider contínuo, indicação de andamento tradicional italiano (Largo, Adagio, Andante, Moderato, Allegro, Presto) e botão de **Tap Tempo** com feedback tátil/visual.
-- **Batidas por Compasso:** Seleção rápida entre 1 (Livre/sem acento), 2/4, 3/4, 4/4, 6/8 ou stepper para 1 a 12 batidas.
-- **Variações de Timbres (5 sons sintetizados):** Madeira (Woodblock), Digital (Beep), Baqueta (Stick), Campana (Cowbell) e Gota Pop (Suave), com preview ao clicar.
+### Metrônomo e Temporizador Integrados (Web Audio API & Voice Coach)
+- Localizado acima do player na sidebar (`MetronomeWidget.vue`), unificado em um único card minimalista com botão mestre de reprodução conjunta.
+- **Painel Central do Card Unificado:**
+  - **Lado Esquerdo (Metrônomo):** Mostrador de BPM com steppers (-5, +5), botão de **TAP TEMPO**, slider contínuo de andamento e visualizador de batidas (`● ● ○ ○`).
+  - **Lado Direito (Temporizador):** Display digital de contagem regressiva `MM:SS` com steppers rápidos (±15s), chips de presets (30s, 1m, 2m, 3m, 5m, ∞) e barra de progresso suave.
+- **Módulo Temporizador de Prática (Timer):**
+  - Configuração do metrônomo para tocar por X tempo com parada automática.
+  - **Presets Rápidos:** 30s, 1m, 2m, 3m, 5m ou modo livre (∞), além de steppers finos (±15s).
+  - **Display Digital e Progresso:** Exibição clara de contagem regressiva `MM:SS` com barra de progresso dinâmica.
+  - **Sincronização:** Opção de tocar o metrônomo durante a contagem (`⏱️ Sinc`) ou temporizador silencioso.
+  - **Conclusão e Avanço Automático:** Ao zerar o tempo X, conclui automaticamente o exercício na rotina e avança para o próximo.
+- **Voz Sintetizada (Voice Coach - Web Speech API pt-BR):**
+  - Anuncia verbalmente `"Iniciando"` ao começar o temporizador, metrônomo ou vídeo.
+  - Anuncia verbalmente `"Finalizado"` ao término do temporizador de prática ou ao final do vídeo de treino.
+  - Chip dedicado para ativar ou silenciar a voz a qualquer momento (`🎙️ Voz On/Off`).
 - **Sincronização Visual e no Diagrama:**
-  - Visualizador de batidas com destaque dourado para o tempo forte (acento) e verde nos demais.
-  - No diagrama 3D (`RoadmapScene.vue`): pulsação elástica no nó ativo com GSAP, ondas sonoras de choque (sonar ripples) concêntricas emitidas no ritmo, pulso luminoso dinâmico no trajeto e Floating HUD com mini-pêndulo oscilante, contagem de batidas e botão de parada instantânea.
-- **Persistência e Volume:** Volume ajustável com mute e persistência automática em `localStorage` para BPM, compasso, timbre e volume.
+  - Visualizador de batidas minimalista (dots pulsantes no nó e na barra).
+  - No diagrama 3D (`RoadmapScene.vue`): pulsação elástica no nó ativo com GSAP, sonar waves, trajeto iluminado e Floating HUD.
 
 ### Streak (Ofensiva)
 - Dias consecutivos de prática (current + recorde)
@@ -123,7 +134,7 @@ src/
 ├── lib/firebase.ts, ai.ts
 ├── types/index.ts
 ├── stores/routine.ts, player.ts, streak.ts, aiUsage.ts, auth.ts, metronome.ts
-├── composables/useThreeScene.ts, usePwa.ts
+├── composables/useThreeScene.ts, usePwa.ts, useVoiceCoach.ts
 ├── components/RoadmapScene.vue, ExerciseModal.vue, PlayerControls.vue, StreakPanel.vue, MetronomeWidget.vue
 ├── App.vue, main.ts, router/index.ts
 ```
