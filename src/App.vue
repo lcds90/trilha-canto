@@ -5,7 +5,9 @@ import { useRoutineStore } from '@/stores/routine'
 import { usePwa } from '@/composables/usePwa'
 import RoadmapScene from '@/components/RoadmapScene.vue'
 import PlayerControls from '@/components/PlayerControls.vue'
+import WorkoutCelebrationModal from '@/components/WorkoutCelebrationModal.vue'
 
+const routineStore = useRoutineStore()
 const sidebarWidth = ref(350)
 const sidebarPosition = ref<'left' | 'right'>('right')
 const isResizing = ref(false)
@@ -56,7 +58,6 @@ provide('sheetState', sheetState)
 const { needRefresh, offlineReady, applyUpdate, dismissUpdate } = usePwa()
 
 onMounted(() => {
-  const routineStore = useRoutineStore()
   const today = getLocalDayISO()
   const lastActiveDate = localStorage.getItem('trilha-canto-last-active')
   
@@ -172,6 +173,12 @@ function stopResize() {
         <span>✅ Pronto para usar offline</span>
       </div>
     </Transition>
+
+    <!-- Modal de Celebração: Treino Concluído -->
+    <WorkoutCelebrationModal
+      v-if="routineStore.showCompletionCelebration"
+      @close="routineStore.dismissCelebration"
+    />
   </div>
 </template>
 

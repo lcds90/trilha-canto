@@ -26,11 +26,12 @@ App de rotina de prática de canto com roadmap visual 3D animado (Three.js). O u
 src/
 ├── lib/
 │   ├── firebase.ts              # Inicialização Firebase via env
-│   └── ai.ts                    # Firebase AI Logic + analyzeSection()
+│   ├── ai.ts                    # Firebase AI Logic + analyzeSection()
+│   └── celebrationSound.ts      # Síntese Web Audio API de celebração de treino
 ├── types/
 │   └── index.ts                 # Interfaces TypeScript
 ├── stores/
-│   ├── routine.ts               # Estado dos nós e exercícios
+│   ├── routine.ts               # Estado dos nós e exercícios (inclui celebração)
 │   ├── player.ts                # Navegação e auto-advance
 │   ├── streak.ts                # Ofensiva e histórico
 │   ├── aiUsage.ts               # Rate limiting da IA
@@ -45,7 +46,8 @@ src/
 │   ├── ExerciseModal.vue        # Modal com exercícios + IA
 │   ├── PlayerControls.vue       # Player: play/pause/next/prev/shortcuts
 │   ├── StreakPanel.vue          # Ofensiva + calendário 30 dias
-│   └── MetronomeWidget.vue      # Widget de metrônomo integrado
+│   ├── MetronomeWidget.vue      # Widget de metrônomo integrado
+│   └── WorkoutCelebrationModal.vue # Modal animado centralizado de treino concluído
 ├── App.vue                      # Layout principal
 ├── main.ts                      # Entry point
 └── router/index.ts              # Vue Router (vazio)

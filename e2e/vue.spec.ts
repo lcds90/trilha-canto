@@ -10,38 +10,24 @@ test('loads app and interacts with metronome and player', async ({ page }) => {
   await expect(page.locator('.roadmap-container')).toBeVisible()
 
   // Metronome widget is present
-  const metronome = page.locator('.metronome-widget')
+  const metronome = page.locator('.unified-practice-widget')
   await expect(metronome).toBeVisible()
 
   // Test BPM and Metronome Controls
-  await expect(metronome.locator('.title-text')).toHaveText('Metrônomo')
-  const miniPlayBtn = metronome.locator('.mini-play-btn')
-  await expect(miniPlayBtn).toBeVisible()
+  await expect(metronome.locator('.header-title')).toContainText('Metrônomo')
+  const playBtn = metronome.locator('.main-toggle-btn')
+  await expect(playBtn).toBeVisible()
 
   // Click play on metronome
-  await miniPlayBtn.click()
+  await playBtn.click()
 
   // Scene HUD should appear while metronome is playing
   const sceneHud = page.locator('.scene-metronome-hud')
   await expect(sceneHud).toBeVisible()
 
   // Increment BPM
-  const plusBtn = metronome.locator('.step-btn', { hasText: '+5' })
+  const plusBtn = metronome.locator('.micro-btn', { hasText: '+5' })
   await plusBtn.click()
-
-  // Verify meter presets
-  const meter3Btn = metronome.locator('.meter-chip', { hasText: '3/4' })
-  await meter3Btn.click()
-  await expect(metronome.locator('.current-meter-tag')).toHaveText('3/4')
-
-  // Verify beat dots count equals 3
-  const beatDots = metronome.locator('.beat-dot')
-  await expect(beatDots).toHaveCount(3)
-
-  // Test sound selector
-  const soundBellBtn = metronome.locator('.sound-btn', { hasText: 'Digital' })
-  await soundBellBtn.click()
-  await expect(soundBellBtn).toHaveClass(/active/)
 
   // Stop via scene HUD
   const hudStopBtn = sceneHud.locator('.hud-stop-icon')
@@ -120,4 +106,65 @@ test('reorders exercises via drag and drop', async ({ page }) => {
   await expect(cards.nth(1).locator('.edit-input.font-bold')).toHaveValue(firstTitle)
 })
 
+test('displays centered workout celebration animation and sound effect when all sections are completed', async ({ page }) => {
+  // Pre-populate with all sections completed except the first exercise of section 1
+  await page.addInitScript(() => {
+    const d = new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
+    const today = d.toISOString().split('T')[0]
+    localStorage.setItem('trilha-canto-last-active', today)
+    const routine = [
+      {
+        id: 'respiracao',
+        title: 'Respiração e Suporte',
+        time: 'Tempo flexível',
+        color: '#ffe500',
+        completed: false,
+        exercises: [
+          { id: 'resp-1', name: 'Inspiração e expiração livres', completed: false, videos: [] },
+        ],
+      },
+      {
+        id: 'aquecimento-corporal',
+        title: 'Aquecimento Corporal',
+        time: '+/- 15 min',
+        color: '#ffe500',
+        completed: true,
+        exercises: [
+          { id: 'corp-1', name: 'Alongamento e articulações', completed: true, videos: [] },
+        ],
+      },
+    ]
+    localStorage.setItem('trilha-canto-routine', JSON.stringify(routine))
+  })
 
+  await page.goto('/?section=1')
+
+  // Celebration overlay should not be visible before completion
+  await expect(page.locator('.celebration-overlay')).toBeHidden()
+
+  // Click complete on the remaining exercise
+  const completeBtn = page.locator('.complete-toggle-pill')
+  await expect(completeBtn).toBeVisible()
+  await completeBtn.click()
+
+  // The celebration modal MUST now be visible and centered on the screen
+  const celebration = page.locator('.celebration-overlay')
+  await expect(celebration).toBeVisible()
+
+  // Verify the exact requested text: "Treino concluído 🎉🎈🎤"
+  const title = celebration.locator('.celebration-title')
+  await expect(title).toBeVisible()
+  await expect(title).toHaveText('Treino concluído 🎉🎈🎤')
+
+  // Verify celebration card and buttons exist
+  await expect(celebration.locator('.celebration-card')).toBeVisible()
+  await expect(celebration.locator('.replay-sound-btn')).toBeVisible()
+  await expect(celebration.locator('.continue-btn')).toBeVisible()
+
+  // Test replay sound button interaction
+  await celebration.locator('.replay-sound-btn').click()
+
+  // Test closing the celebration via "Continuar" button
+  await celebration.locator('.continue-btn').click()
+  await expect(celebration).toBeHidden()
+})

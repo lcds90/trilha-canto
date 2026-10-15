@@ -99,6 +99,15 @@ App de rotina interativa para guiar a prática diária de canto. O usuário nave
   - Visualizador de batidas minimalista (dots pulsantes no nó e na barra).
   - No diagrama 3D (`RoadmapScene.vue`): pulsação elástica no nó ativo com GSAP, sonar waves, trajeto iluminado e Floating HUD.
 
+### Celebração de Conclusão de Treino ("Treino concluído 🎉🎈🎤")
+- **Disparo Automático:** Ao concluir todas as seções da rotina diária (`routineStore.isAllCompleted`), um modal animado centralizado (`WorkoutCelebrationModal.vue`) é aberto automaticamente.
+- **Efeito Sonoro Festivo:** Síntese em tempo real com Web Audio API (`celebrationSound.ts`) executando fanfarra triunfal com arpeggio harmônico e sinos brilhantes. Se ativado, o Voice Coach anuncia verbalmente "Treino concluído!".
+- **Animações Visuais Centralizadas:**
+  - Título em destaque: "Treino concluído 🎉🎈🎤" em gradiente dourado e esmeralda.
+  - Chuva 360° de confetes coloridos, balões animados flutuando para o topo e emojis voando (🎉, 🎈, 🎤, 🎵, 🎶, ✨, 🌟).
+  - Ondas de choque sonar concêntricas e brilho glassmorphism.
+  - Resumo de seções concluídas, ofensiva em dias (Streak 🔥), botão "Tocar Som 🔔" e botão "Continuar 🚀" com fechamento automático em 8 segundos.
+
 ### Streak (Ofensiva)
 - Dias consecutivos de prática (current + recorde)
 - Calendário visual dos últimos 30 dias (grid 7x~5)
@@ -131,11 +140,11 @@ App de rotina interativa para guiar a prática diária de canto. O usuário nave
 ## Estrutura de Arquivos
 ```
 src/
-├── lib/firebase.ts, ai.ts
+├── lib/firebase.ts, ai.ts, celebrationSound.ts
 ├── types/index.ts
 ├── stores/routine.ts, player.ts, streak.ts, aiUsage.ts, auth.ts, metronome.ts
 ├── composables/useThreeScene.ts, usePwa.ts, useVoiceCoach.ts
-├── components/RoadmapScene.vue, ExerciseModal.vue, PlayerControls.vue, StreakPanel.vue, MetronomeWidget.vue
+├── components/RoadmapScene.vue, ExerciseModal.vue, PlayerControls.vue, StreakPanel.vue, MetronomeWidget.vue, WorkoutCelebrationModal.vue
 ├── App.vue, main.ts, router/index.ts
 ```
 

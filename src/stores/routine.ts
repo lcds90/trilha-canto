@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import type { RoadmapNode } from '@/types'
 import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { db, auth } from '@/lib/firebase'
@@ -157,7 +157,25 @@ export const useRoutineStore = defineStore('routine', () => {
   })
 
   const isAllCompleted = computed<boolean>(() => {
-    return nodes.value.every(n => n.completed)
+    return nodes.value.length > 0 && nodes.value.every(n => n.completed)
+  })
+
+  const showCompletionCelebration = ref(false)
+
+  function triggerCelebration(): void {
+    showCompletionCelebration.value = true
+  }
+
+  function dismissCelebration(): void {
+    showCompletionCelebration.value = false
+  }
+
+  let previousAllCompleted = isAllCompleted.value
+  watch(isAllCompleted, (completed) => {
+    if (completed && !previousAllCompleted) {
+      showCompletionCelebration.value = true
+    }
+    previousAllCompleted = completed
   })
 
   function toggleExercise(nodeId: string, exerciseId: string, forceState?: boolean): void {
@@ -218,6 +236,7 @@ export const useRoutineStore = defineStore('routine', () => {
         exercise.completed = false
       }
     }
+    showCompletionCelebration.value = false
     saveToStorage()
   }
 
@@ -247,6 +266,9 @@ export const useRoutineStore = defineStore('routine', () => {
     nodes,
     totalDuration,
     isAllCompleted,
+    showCompletionCelebration,
+    triggerCelebration,
+    dismissCelebration,
     toggleExercise,
     addExercise,
     updateExercise,

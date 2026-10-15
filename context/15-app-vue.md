@@ -28,3 +28,8 @@ Este documento documenta o componente raiz `src/App.vue`, responsável pelo gere
 
 - **Reset Diário de Rotina:**
   - Verifica no `onMounted` a data atual via `getLocalDayISO()` contra `localStorage.getItem('trilha-canto-last-active')`. Caso o dia tenha virado, aciona `routineStore.resetDaily()` preservando o progresso da sessão até o dia seguinte.
+
+- **Modal de Celebração de Treino Concluído (`WorkoutCelebrationModal.vue`):**
+  - Renderizado no nível raiz de `App.vue` (`z-index: 12000`) sob condição `v-if="routineStore.showCompletionCelebration"`.
+  - Exibe animação centralizada com som de efeito festivo Web Audio API, chuva de confetes, balões animados, pulso sonar concêntrico e mensagem "Treino concluído 🎉🎈🎤".
+  - Fecha ao clicar em "Continuar", no backdrop, no botão fechar (✕), tecla `Escape` ou automaticamente após 8 segundos.

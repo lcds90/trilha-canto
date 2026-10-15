@@ -112,3 +112,21 @@ Estes logs registram a migração do fluxo original para uma experiência de SPA
   - Remoção de bordas pesadas e sombras skeuomórficas 3D em favor de uma estética moderna, limpa e plana.
   - Barra de progresso ultrafina no topo do cabeçalho da seção.
   - Linha secundária discreta com controle de volume, checkbox de auto-avanço e controle de voz.
+
+## 12. Celebração de Conclusão de Treino: Animação Centralizada e Efeito Sonoro ("Treino concluído 🎉🎈🎤")
+- **Disparo Automático ao Concluir Todas as Seções:**
+  - Ao completar todos os exercícios e nós de rotina (`routineStore.isAllCompleted`), um modal animado centralizado na tela (`WorkoutCelebrationModal.vue`) é disparado de forma automática e reativa.
+  - A store `routine.ts` expõe `showCompletionCelebration`, `triggerCelebration()` e `dismissCelebration()`, com salvaguarda na inicialização do app para não disparar em carregamentos repetidos de página.
+- **Efeito Sonoro Festivo (Fanfarra Web Audio API):**
+  - Implementado em `src/lib/celebrationSound.ts` utilizando Web Audio API nativo sem necessidade de arquivos externos de áudio.
+  - Sintetiza arpeggio ascendente triunfal (C5, E5, G5, C6, E6) com harmônicos combinados (triângulo + seno) e acorde final ressonante sustentado com brilho de sinos (sparkles).
+  - Integrado ao Voice Coach (`useVoiceCoach.ts`), que anuncia verbalmente "Treino concluído!" caso a síntese de voz esteja ativada.
+- **Animação Visual Centralizada:**
+  - Exibe na tela o título exato: **"Treino concluído 🎉🎈🎤"** em tipografia gradiente (dourado, esmeralda e azul).
+  - Entrada elástica com GSAP (`back.out(1.8)`), pulso sonar concêntrico triplo e brilho radial em glassmorphism.
+  - Partículas festivas animadas: balões (🎈) subindo suavemente com oscilação física, explosão 360° de confetes coloridos e emojis flutuantes (🎉, 🎤, 🎵, 🎶, ✨, 🌟).
+  - Exibição de estatísticas: total de seções concluídas, dias consecutivos de ofensiva (Streak 🔥) e mensagem de incentivo.
+  - Botão "Continuar 🚀", botão "Tocar Som 🔔" para reprodução sob demanda, botão de fechar (✕) e barra de progresso para fechamento automático suave após 8 segundos.
+- **Cobertura de Testes E2E (Playwright):**
+  - Teste automatizado em `e2e/vue.spec.ts` validando o acionamento do overlay, presença do texto "Treino concluído 🎉🎈🎤", botões interativos e fechamento.
+

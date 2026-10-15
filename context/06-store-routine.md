@@ -233,6 +233,9 @@ routineStore.resetDaily()
 // Duração total
 routineStore.totalDuration    // número em segundos
 routineStore.isAllCompleted   // boolean
+routineStore.showCompletionCelebration // boolean (controla exibição do modal de celebração)
+routineStore.triggerCelebration()      // dispara manualmente a celebração
+routineStore.dismissCelebration()      // fecha o modal de celebração
 ```
 
 ## Persistência na Nuvem (Firestore)
